@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#071a33" />
+    <title>Quiniela AI Studio · Escrutinio</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <div class="brand"><span class="mark">✓</span><span>QUINIELA <em>AI STUDIO</em></span></div>
+      <div class="edition">MÓVIL <b>· ESCRUTINIO</b></div>
+    </header>
+    <main>
+      <section class="hero">
+        <p class="eyebrow">TUS APUESTAS, PARTIDO A PARTIDO</p>
+        <h1>Escrutinio</h1>
+        <p>Importa tu TXT y comprueba los aciertos de la jornada.</p>
+      </section>
+
+      <section class="controls card" aria-label="Jornada">
+        <div class="select-row">
+          <label>Temporada<select id="seasonSelect" disabled aria-label="Temporada"></select></label>
+          <label>Jornada<select id="roundSelect" disabled aria-label="Jornada"></select></label>
+          <button id="currentButton" class="quiet" onclick="goCurrentRound()" disabled>En curso</button>
+        </div>
+        <div class="action-row">
+          <button id="updateButton" class="primary" onclick="updateData()">↻ Actualizar datos</button>
+          <button id="refreshButton" class="quiet" onclick="refreshResults()" disabled>↻ Actualizar marcador</button>
+          <button id="importButton" class="outline" onclick="Android.pickTextFile()">＋ Importar apuestas TXT</button>
+        </div>
+        <div id="status" class="status">Actualiza los datos de la jornada para empezar.</div>
+      </section>
+
+      <section class="summary-card" aria-live="polite">
+        <div class="summary-icon">⚽</div>
+        <div class="summary-copy"><span id="betCaption">APUESTAS</span><strong id="hitSummary">Carga una jornada y un TXT</strong><small id="hitDetail">Los datos se guardan en este teléfono.</small></div>
+      </section>
+
+      <section class="card match-card">
+        <div class="section-title"><div><span class="eyebrow">RESULTADO POR ENCUENTRO</span><h2>Partidos</h2></div><span id="matchProgress" class="progress-pill">0/14</span></div>
+        <div id="matches" class="matches"><div class="empty">Los partidos aparecerán al actualizar los datos.</div></div>
+      </section>
+
+      <section id="prizeCard" class="prize-card card">
+        <div class="prize-top"><span class="trophy">★</span><div><span class="eyebrow">REPARTO PUBLICADO</span><h2>Premios</h2></div></div>
+        <div id="prizes" class="prizes"><div class="empty">El desglose económico aparece cuando se publica el escrutinio definitivo.</div></div>
+        <small class="disclaimer">Cálculo sobre el TXT importado. No confirma que el boleto esté sellado ni acredita un cobro.</small>
+      </section>
+
+      <footer>Quiniela AI Studio · Consulta personal · No realiza apuestas ni pagos</footer>
+    </main>
+
+    <div id="loading" class="loading hidden" role="status"><div class="spinner"></div><strong id="loadingText">Actualizando resultados…</strong></div>
+    <script src="engine.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
