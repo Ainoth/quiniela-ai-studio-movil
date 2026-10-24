@@ -70,3 +70,8 @@ test("identifica de forma exacta la línea PRE de la jornada solicitada", () => 
   assert.equal(E.roundLine(data, 16), "16  round 16");
   assert.equal(E.roundLine(data, 10), "");
 });
+
+test("muestra fecha y hora compactas con un separador legible", () => {
+  assert.equal(E.formatKickoff("24/10/202614:00"), "24/10/2026 · 14:00");
+  assert.equal(E.formatKickoff(""), "");
+});

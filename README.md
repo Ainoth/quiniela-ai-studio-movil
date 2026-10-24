@@ -20,7 +20,7 @@ sellado o pagado. La app no envía apuestas ni realiza pagos.
 
 ## Compilar
 
-Con Android SDK 33 y JDK 17:
+Con Android SDK 35 y JDK 17:
 
 ```bash
 cd android
@@ -37,6 +37,14 @@ del repositorio.
 node --test tests/*.test.cjs
 cd android && ./gradlew lintDebug assembleDebug
 ```
+
+La prueba en dispositivo se realizó en un Samsung Galaxy S20+ (SM-G986N,
+Android 13):
+descarga de jornadas, selección de temporadas, importación de TXT válido e
+inválido, lectura del escrutinio definitivo, desglose de premios y restauración
+de apuestas tras reiniciar. El marcador en directo puede no publicar la
+temporada/jornada elegida; la app conserva los equipos seleccionados y no
+asocia un resultado externo si no coincide con ellos.
 
 ## Alcance actual
 

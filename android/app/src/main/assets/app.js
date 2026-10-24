@@ -64,7 +64,7 @@ function fixture(round) {
     const homeCode = block.slice(index * 6, index * 6 + 3);
     const awayCode = block.slice(index * 6 + 3, index * 6 + 6);
     return { number: index + 1, home: names[homeCode] || homeCode,
-      away: names[awayCode] || awayCode, kick: hours[index] || "" };
+      away: names[awayCode] || awayCode, kick: E.formatKickoff(hours[index] || "") };
   });
 }
 function selectedOfficial() {
@@ -84,6 +84,7 @@ function renderSelectors() {
   season.disabled = !ready;
   round.disabled = !ready;
   byId("currentButton").disabled = !ready;
+  byId("refreshButton").disabled = !ready;
   if (previousSeason !== season.value && ready) {
     state.season = season.value;
     state.round = +round.value;
@@ -170,7 +171,7 @@ function normalizeTeam(value) {
 }
 function validateLiveRows(rows) {
   if (rows.length !== 15 || rows.some((row, index) => +row.orden !== index + 1))
-    throw Error("El proveedor no publica los 15 partidos de esta jornada.");
+    throw Error("No hay un marcador publicado para " + state.season + " · J" + state.round + ". Revisa la jornada o inténtalo más tarde.");
   rows.forEach((row, index) => {
     const expected = matchRows[index];
     if (normalizeTeam(row.local) !== normalizeTeam(expected.home) || normalizeTeam(row.visitante) !== normalizeTeam(expected.away))
@@ -214,7 +215,8 @@ async function refreshResults(silent = false) {
     const cached = state.live[key];
     setStatus(cached
       ? "No se pudo renovar el marcador. Se muestran los datos guardados de " + new Date(cached.capturedAt).toLocaleString("es-ES") + ". " + error.message
-      : "Todavía no hay marcadores disponibles para esta jornada. " + error.message,
+      : error.message.startsWith("No hay un marcador publicado") ? error.message
+        : "Todavía no hay marcadores disponibles para esta jornada. " + error.message,
     cached ? "" : "error");
   } finally {
     liveBusy = false;

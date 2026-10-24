@@ -13,6 +13,10 @@
     return match ? new Date(+match[3], +match[2] - 1, +match[1], +match[4], +match[5]) : null;
   }
 
+  function formatKickoff(text) {
+    return String(text || "").replace(/^(\d{2}\/\d{2}\/\d{4})\s*(\d{2}:\d{2})/, "$1 · $2");
+  }
+
   function parseDates(text) {
     return (text || "").split(/\r?\n/).flatMap((line) => {
       const match = line.match(/^(\d{2}):(\d{2})\/(\d{2})\/(\d{4})/);
@@ -130,7 +134,7 @@
     return { rows, totalCents };
   }
 
-  root.EscrutinioEngine = { roundLine, parseKickoff, parseDates, parseHours, parseNames,
+  root.EscrutinioEngine = { roundLine, parseKickoff, formatKickoff, parseDates, parseHours, parseNames,
     availableRounds, currentRound, scrutiny, live, evaluate, awardBreakdown };
   if (typeof module !== "undefined") module.exports = root.EscrutinioEngine;
 })(typeof globalThis !== "undefined" ? globalThis : this);

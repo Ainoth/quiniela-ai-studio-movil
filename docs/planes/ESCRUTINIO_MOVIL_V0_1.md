@@ -43,8 +43,12 @@ Implementado para v0.1. La interfaz y el motor están aislados del escritorio;
 el puente Android acota hosts, tiempos y tamaños de descarga. El motor se ha
 validado con casos deterministas de PRE, premios en céntimos, marcador 0–0
 pendiente, Pleno y búsqueda de jornada. El APK debug compila. La validación
-visual y de importación SAF en un teléfono físico queda pendiente porque no hay
-dispositivo Android conectado al entorno de desarrollo.
+visual e importación SAF se validaron en un Samsung Galaxy S20+ (SM-G986N).
+Se comprobaron descarga real, cambio de temporada y jornada, rechazo de TXT
+inválido, importación de TXT válido, resultados PRE definitivos, desglose de
+premios y restauración después de forzar el cierre. El feed en directo se
+rechaza si no hay una jornada correspondiente a la selección; no se atribuyen
+marcadores de otros partidos.
 
 ## Fuera de alcance
 

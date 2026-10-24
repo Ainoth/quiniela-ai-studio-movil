@@ -1,5 +1,13 @@
 # Cambios
 
+## 0.1.1 — ajustes tras prueba en móvil
+
+- Separa fecha y hora en la ficha de cada partido para mejorar la lectura.
+- Aclara el aviso cuando el proveedor de marcadores no tiene la jornada
+  seleccionada y vuelve a habilitar «Actualizar marcador» al restaurar la app.
+- Verificado en Samsung Galaxy S20+ con Android mediante descarga real e
+  importación de un TXT de prueba; las apuestas se conservan al reiniciar.
+
 ## 0.1.0 — primera entrega móvil de Escrutinio
 
 - RF-MOV-001: consultar resultados de una temporada/jornada y comprobar TXT
