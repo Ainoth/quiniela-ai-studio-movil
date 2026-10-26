@@ -1,0 +1,204 @@
+"use strict";
+
+const SCRUTINY_LIVE_URL = "https://static.dataradar.es/marcador/json/partidos.json";
+
+function scrutinyKey() { return state.season + ":" + state.round; }
+function scrutinyState() {
+  if (!state.scrutinyBets || typeof state.scrutinyBets !== "object") state.scrutinyBets = {};
+  if (!state.scrutinyLive || typeof state.scrutinyLive !== "object") state.scrutinyLive = {};
+  return { bets: state.scrutinyBets, live: state.scrutinyLive };
+}
+function scrutinyStatus(message, kind = "") {
+  const el = byId("scrutinyStatus");
+  if (!el) return;
+  el.textContent = message;
+  el.className = "help-text" + (kind ? " " + kind : "");
+}
+function scrutinyOfficial() {
+  if (!state.data || !state.season || !state.round) return null;
+  return E.scrutiny(E.roundLine(state.data["PRE" + state.season + ".TXT"], state.round));
+}
+function scrutinyResults() {
+  const official = scrutinyOfficial();
+  const matches = fixture(state.round, state.season);
+  if (official) return matches.map((match, index) => ({
+    orden: index + 1, local: match.home, visitante: match.away, score: "Final",
+    sign: index < 14 ? official.result[index] : "", pleno: index === 14 ? official.pleno : "",
+    final: true, status: "Escrutinio definitivo",
+  }));
+  return scrutinyState().live[scrutinyKey()]?.rows || [];
+}
+function scrutinyNormalizeTeam(value) {
+  let key = String(value || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  key = key.replace(/WF$/, "F").replace(/F$/, "");
+  const aliases = {
+    ATHCLUBBILBAO: "ATHCLUB", ATHLETICCLUB: "ATHCLUB", ATHLETICBILBAO: "ATHCLUB",
+    ATLETICOMADRID: "ATMADRID", ATLETICODEMADRID: "ATMADRID", RAYOVALLECANO: "RAYO",
+    REALSOCIEDAD: "RSOCIEDAD", REALOVIEDO: "ROVIEDO", REALMADRID: "RMADRID",
+    RACINGSANTANDER: "RACINGS", DEPORTIVOCORUNA: "DEPORTIVO", DEPORTIVOLACORUNA: "DEPORTIVO",
+    MANCHUNITED: "MANUNITED", MANCHESTERUNITED: "MANUNITED", MANCHESTCITY: "MANCITY",
+    MANCHESTERCITY: "MANCITY", SHAKTARDONETSK: "SHAKHTARDONETSK", RBLEIPZIG: "LEIPZIG",
+  };
+  return aliases[key] || key;
+}
+function scrutinyValidateLiveRows(rows) {
+  const matches = fixture(state.round, state.season);
+  if (rows.length !== 15 || rows.some((row, index) => +row.orden !== index + 1))
+    throw Error("No hay marcadores publicados para esta jornada.");
+  rows.forEach((row, index) => {
+    const match = matches[index];
+    if (scrutinyNormalizeTeam(row.local) !== scrutinyNormalizeTeam(match.home) ||
+        scrutinyNormalizeTeam(row.visitante) !== scrutinyNormalizeTeam(match.away))
+      throw Error("Los equipos del partido " + (index + 1) + " no coinciden; se descartan esos marcadores.");
+  });
+  return rows.map(E.live);
+}
+function scrutinyFormatMoney(cents) {
+  return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(cents / 100);
+}
+function renderScrutiny() {
+  scrutinyState();
+  const seasonSelect = byId("scrutinySeason"), roundSelect = byId("scrutinyRound");
+  const seasons = Object.keys(state.data || {}).filter((key) => /^FEC\d{2}-\d{2}\.TXT$/.test(key))
+    .map((key) => key.slice(3, 8)).sort().reverse();
+  seasonSelect.innerHTML = seasons.map((season) => '<option value="' + escapeHtml(season) + '">' + escapeHtml(season) + "</option>").join("");
+  seasonSelect.value = seasons.includes(state.season) ? state.season : (seasons[0] || "");
+  const rounds = state.data && seasonSelect.value ? E.availableRounds(state.data, seasonSelect.value) : [];
+  roundSelect.innerHTML = rounds.map(({ round }) => '<option value="' + round + '">Jornada ' + round + "</option>").join("");
+  roundSelect.value = rounds.some(({ round }) => round === +state.round) ? String(state.round) : (rounds.at(-1)?.round ? String(rounds.at(-1).round) : "");
+  seasonSelect.disabled = !state.data || !seasons.length;
+  roundSelect.disabled = !state.data || !rounds.length;
+
+  const matches = fixture(state.round, state.season);
+  const results = scrutinyResults();
+  const official = scrutinyOfficial();
+  const saved = scrutinyState().bets[scrutinyKey()] || { name: "", bets: [] };
+  const bets = Array.isArray(saved.bets) ? saved.bets : [];
+  const evaluated = bets.length && results.length ? E.evaluate(bets, results) : [];
+  const best = evaluated[0];
+  const known = results.slice(0, 14).filter((row) => row.sign).length;
+  const prize = official && bets.length ? E.awardBreakdown(bets, official) : null;
+
+  byId("scrutinyProgress").textContent = known + "/14";
+  byId("scrutinySummary").textContent = !state.data
+    ? "Descarga los datos desde Ajustes para empezar."
+    : !bets.length ? "Importa un TXT o usa el desarrollo actual."
+      : !known ? bets.length + " apuestas · esperando resultados"
+        : official ? (best ? best.hits + "/14 aciertos · " + scrutinyFormatMoney(prize.totalCents) : "Escrutinio definitivo disponible")
+          : best.hits + "/14 aciertos actuales";
+  byId("scrutinyDetail").textContent = !bets.length
+    ? (saved.name || "Las apuestas se guardan por temporada y jornada.")
+    : official ? bets.length + " apuestas · escrutinio definitivo · " + (saved.name || "TXT importado")
+      : best ? best.confirmed + " confirmados · máximo " + best.maximum + " · " + bets.length + " apuestas · puede cambiar"
+        : bets.length + " apuestas guardadas para " + state.season + " · J" + state.round;
+
+  if (!matches.length) {
+    byId("scrutinyMatches").innerHTML = '<div class="empty">Actualiza los datos de WIN1X2 para consultar los partidos.</div>';
+  } else {
+    byId("scrutinyMatches").innerHTML = matches.map((match, index) => {
+      const result = results[index] || {};
+      const betSign = best?.bet[index] || "";
+      const hit = index < 14 && result.sign && betSign && result.sign === betSign;
+      const own = index < 14 && result.sign && betSign
+        ? '<small class="hit-mark ' + (hit ? "ok" : "no") + '">' + (hit ? "✓ Acierto de la mejor apuesta" : "× No acierta la mejor apuesta") + "</small>" : "";
+      const plenoHit = !!(best && best.bet.length === 16 && best.hits === 14 && best.bet.slice(14) === result.pleno);
+      const pleno = index === 14 && best && best.bet.length === 16 && result.pleno
+        ? '<small class="hit-mark ' + (plenoHit ? "ok" : "no") + '">' + (plenoHit ? "✓ Pleno acertado" : "× Pleno distinto") + "</small>" : "";
+      return '<article class="match ' + (result.final ? "final" : result.sign ? "" : "pending") + '"><span class="match-number">' + String(index + 1).padStart(2, "0") +
+        '</span><span class="teams"><strong>' + escapeHtml(match.home) + " – " + escapeHtml(match.away) + '</strong><small>' +
+        escapeHtml(result.status || match.kick || "Pendiente") + '</small></span><span class="score">' + escapeHtml(result.score || "—") +
+        '</span><span class="sign">' + escapeHtml(index === 14 ? (result.pleno || "P15") : (result.sign || "—")) + "</span>" + own + pleno + "</article>";
+    }).join("");
+  }
+
+  if (!official) {
+    byId("scrutinyPrizes").innerHTML = '<div class="prize-placeholder">El reparto solo se muestra cuando WIN1X2 publica el escrutinio definitivo. Los marcadores provisionales no permiten calcular premios.</div>';
+  } else if (!bets.length) {
+    byId("scrutinyPrizes").innerHTML = '<div class="prize-placeholder">Escrutinio definitivo disponible · resultado ' + escapeHtml(official.result) +
+      ' · Pleno ' + escapeHtml(official.pleno.split("").join("–")) + '. Importa tus apuestas para calcular el premio.</div>';
+  } else {
+    const breakdown = prize;
+    byId("scrutinyPrizes").innerHTML = '<div class="prize-placeholder">Jornada ' + state.round + " · Resultado " + escapeHtml(official.result) +
+      " · Pleno " + escapeHtml(official.pleno.split("").join("–")) + '</div><div class="prize-table"><div class="prize-head"><span>Categoría</span><span>Tuyas</span><span>€/apuesta</span><span>Subtotal</span></div>' +
+      breakdown.rows.map((row) => '<div class="prize-row"><span>' + (row.category === 15 ? "Pleno al 15" : row.category + " aciertos") + "</span><span>" + row.mine + " / " + row.winners +
+        "</span><span>" + scrutinyFormatMoney(row.amountCents) + "</span><b>" + scrutinyFormatMoney(row.subtotalCents) + "</b></div>").join("") +
+      '</div><div class="prize-total"><span>Premio calculado</span><strong>' + scrutinyFormatMoney(breakdown.totalCents) + "</strong></div>";
+  }
+}
+window.renderScrutiny = renderScrutiny;
+
+function scrutinyChangeSeason(season) {
+  if (!state.data || !season) return;
+  state.season = season;
+  const rounds = E.availableRounds(state.data, season);
+  state.round = season === state.data.season ? E.currentRound(state.data, season) : (rounds.at(-1)?.round || 0);
+  save(); renderAll(); renderScrutiny(); scrutinyRefresh(true);
+}
+function scrutinyChangeRound(round) {
+  if (!round) return;
+  state.round = Number(round);
+  save(); renderAll(); renderScrutiny(); scrutinyRefresh(true);
+}
+async function scrutinyUpdateData() {
+  await updateData();
+  renderScrutiny();
+}
+function scrutinyUseDevelopment() {
+  if (!state.data || !state.round) return scrutinyStatus("Actualiza primero los datos de WIN1X2.", "error");
+  const bets = current().bets || [];
+  if (!bets.length) return scrutinyStatus("Todavía no hay un desarrollo generado para esta jornada.", "error");
+  scrutinyState().bets[scrutinyKey()] = { name: "Desarrollo actual", bets: bets.slice(), importedAt: new Date().toISOString() };
+  save(); renderScrutiny(); scrutinyStatus(bets.length + " apuestas añadidas al escrutinio de " + state.season + " · J" + state.round + ".", "success");
+}
+function scrutinyTicketContext(filename) {
+  const name = String(filename || "");
+  let match = name.match(/(\d{2}-\d{2}).{0,32}?J(?:ornada)?[_ -]?0?(\d+)/i);
+  if (match) return { season: match[1], round: +match[2] };
+  match = name.match(/J(?:ornada)?[_ -]?0?(\d+).*?(\d{2}-\d{2})/i);
+  return match ? { season: match[2], round: +match[1] } : null;
+}
+window.onImportedText = (text, filename) => {
+  if (!state.data || !state.round) return scrutinyStatus("Descarga primero los datos para asociar el TXT a una jornada.", "error");
+  const bets = String(text).split(/\r?\n/).map((line) => line.trim().toUpperCase().replace(/\s/g, "")).filter(Boolean);
+  if (!bets.length || bets.some((bet) => !/^[1X2]{14}([012M]{2})?$/.test(bet)))
+    return scrutinyStatus("TXT no válido: cada línea debe llevar 14 signos 1/X/2 y, si juega el Pleno, dos goles 0/1/2/M.", "error");
+  const context = scrutinyTicketContext(filename);
+  if (context) {
+    if (!Object.keys(state.data).includes("FEC" + context.season + ".TXT") ||
+        !E.availableRounds(state.data, context.season).some((row) => row.round === context.round))
+      return scrutinyStatus("El TXT indica " + context.season + " · J" + context.round + ", una jornada que no está en los datos.", "error");
+    state.season = context.season; state.round = context.round;
+  }
+  scrutinyState().bets[scrutinyKey()] = { name: filename || "Apuestas TXT", bets, importedAt: new Date().toISOString() };
+  save(); renderAll(); renderScrutiny();
+  scrutinyStatus(bets.length + " apuestas importadas para " + state.season + " · J" + state.round + ".", "success");
+  scrutinyRefresh(true);
+};
+async function scrutinyRefresh(silent = false) {
+  if (!state.data || !state.round) return scrutinyStatus("Actualiza los datos de WIN1X2 para consultar esta jornada.");
+  if (scrutinyOfficial()) {
+    renderScrutiny();
+    scrutinyStatus("Escrutinio definitivo disponible · " + state.season + " · J" + state.round + ".", "success");
+    return;
+  }
+  const key = scrutinyKey();
+  if (!silent) scrutinyStatus("Consultando marcadores de J" + state.round + "…");
+  try {
+    const year = 2000 + Number(state.season.slice(-2));
+    const raw = await api("text", SCRUTINY_LIVE_URL + "?r=" + Date.now());
+    if (key !== scrutinyKey()) return;
+    const candidates = JSON.parse(raw).filter((row) => +row.temporada === year && +row.jornada === +state.round)
+      .sort((a, b) => +a.orden - +b.orden);
+    const rows = scrutinyValidateLiveRows(candidates);
+    scrutinyState().live[key] = { capturedAt: new Date().toISOString(), rows };
+    save(); renderScrutiny();
+    const finalCount = rows.slice(0, 14).filter((row) => row.final).length;
+    scrutinyStatus("Marcadores recibidos · " + finalCount + "/14 partidos finalizados · " + new Date().toLocaleTimeString("es-ES") + ".", "success");
+  } catch (error) {
+    if (key !== scrutinyKey()) return;
+    const cached = scrutinyState().live[key];
+    scrutinyStatus(cached
+      ? "No se pudo renovar el marcador. Se muestran los datos guardados de " + new Date(cached.capturedAt).toLocaleString("es-ES") + ". " + error.message
+      : "Todavía no hay marcadores publicados para esta jornada. " + error.message, cached ? "" : "error");
+  }
+}

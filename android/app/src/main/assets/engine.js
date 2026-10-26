@@ -1,6 +1,9 @@
 "use strict";
 (function (root) {
   const SIGNS = ["1", "X", "2"];
+  const MAX_GENERATED = 50_000;
+  const COVERAGE_LEVELS = [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [1, 4],
+    [1, 5], [2, 5], [2, 6], [3, 6], [3, 7]];
 
   function roundLine(text, round) {
     return (text || "")
@@ -36,6 +39,135 @@
       if (separator > 0) names[line.slice(0, separator).trim().toUpperCase()] = line.slice(separator + 1).trim();
     });
     return names;
+  }
+
+  function normalizeTeam(value) {
+    let key = String(value || "").normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    key = key.replace(/WF$/, "F").replace(/F$/, "");
+    const aliases = {
+      ATHCLUBBILBAO: "ATHCLUB", ATHLETICCLUB: "ATHCLUB", ATHLETICBILBAO: "ATHCLUB",
+      ATLETICOMADRID: "ATMADRID", ATLETICODEMADRID: "ATMADRID", RAYOVALLECANO: "RAYO",
+      REALSOCIEDAD: "RSOCIEDAD", REALOVIEDO: "ROVIEDO", REALMADRID: "RMADRID",
+      RACINGSANTANDER: "RACINGS", DEPORTIVOCORUNA: "DEPORTIVO", DEPORTIVOLACORUNA: "DEPORTIVO",
+      MANCHUNITED: "MANUNITED", MANCHESTERUNITED: "MANUNITED", MANCHESTCITY: "MANCITY",
+      MANCHESTERCITY: "MANCITY", SHAKTARDONETSK: "SHAKHTARDONETSK",
+      RBLEIPZIG: "LEIPZIG", MADRIDCCF: "MADRIDCFF",
+    };
+    return aliases[key] || key;
+  }
+
+  function sameTeamName(first, second) {
+    return normalizeTeam(first) === normalizeTeam(second);
+  }
+
+  function normalizeBase(base) {
+    if (!Array.isArray(base) || base.length !== 14 || base.some((row) =>
+      typeof row !== "string" || !row || [...row].some((sign) => !SIGNS.includes(sign))))
+      throw Error("La base necesita al menos un signo 1/X/2 en cada uno de los 14 partidos.");
+    return base.map((row) => SIGNS.filter((sign) => row.includes(sign)).join(""));
+  }
+
+  function validateProbabilities(rows) {
+    if (!Array.isArray(rows) || rows.length !== 14) throw Error("Faltan porcentajes para los 14 partidos.");
+    return rows.map((row, index) => {
+      const values = Array.isArray(row) ? row.map(Number) : [row["1"], row.X, row["2"]].map(Number);
+      if (values.length !== 3 || values.some((value) => !Number.isFinite(value) || value < 0 || value > 1)
+        || Math.abs(values.reduce((sum, value) => sum + value, 0) - 1) > 0.0001)
+        throw Error("Porcentajes inválidos en el partido " + (index + 1) + ".");
+      return values;
+    });
+  }
+
+  function coverageBase(probabilities, level) {
+    const rows = validateProbabilities(probabilities);
+    if (!Number.isInteger(level) || level < 0 || level > 10) throw Error("El nivel de cobertura va de 0 a 10.");
+    const [triples, doubles] = COVERAGE_LEVELS[level];
+    const ranks = rows.map((row) => [0, 1, 2].sort((a, b) => row[b] - row[a] || a - b));
+    const positions = rows.map((row, index) => ({ index, strength: Math.max(...row) }))
+      .sort((a, b) => a.strength - b.strength || a.index - b.index);
+    const widths = Array(14).fill(1);
+    positions.slice(0, triples).forEach(({ index }) => widths[index] = 3);
+    positions.slice(triples, triples + doubles).forEach(({ index }) => widths[index] = 2);
+    return ranks.map((rank, index) => rank.slice(0, widths[index]).sort((a, b) => a - b)
+      .map((signIndex) => SIGNS[signIndex]).join(""));
+  }
+
+  function coverageCounts(level) {
+    if (!Number.isInteger(level) || level < 0 || level > 10) throw Error("El nivel de cobertura va de 0 a 10.");
+    const [triples, doubles] = COVERAGE_LEVELS[level];
+    return { triples, doubles, fixed: 14 - triples - doubles };
+  }
+
+  function baseSize(base, goals = ["0", "0"]) {
+    const normalized = normalizeBase(base);
+    const goalMasks = goals.map((mask) => [...new Set(String(mask))]);
+    if (goalMasks.length !== 2 || goalMasks.some((mask) => !mask.length || mask.some((goal) => !"012M".includes(goal))))
+      throw Error("Selecciona al menos un resultado 0/1/2/M para cada equipo del Pleno.");
+    return normalized.reduce((size, row) => size * row.length, goalMasks[0].length * goalMasks[1].length);
+  }
+
+  function satisfiesFilters(column, filters = {}) {
+    if (filters.accountEnabled) {
+      const counts = {
+        "1": [...column].filter((sign) => sign === "1").length,
+        X: [...column].filter((sign) => sign === "X").length,
+        "2": [...column].filter((sign) => sign === "2").length,
+        V: [...column].filter((sign) => sign !== "1").length,
+      };
+      for (const sign of ["1", "X", "2", "V"]) {
+        const minimum = Number(filters.minCounts?.[sign] ?? 0);
+        const maximum = Number(filters.maxCounts?.[sign] ?? 14);
+        if (counts[sign] < minimum || counts[sign] > maximum) return false;
+      }
+    }
+    if (filters.streakEnabled) {
+      let current = 0, longest = 0;
+      for (const sign of column) {
+        current = sign === "1" ? 0 : current + 1;
+        longest = Math.max(longest, current);
+      }
+      if (longest > Number(filters.maxVariantRun || 14)) return false;
+    }
+    return true;
+  }
+
+  function generateBets(base, goals = ["0", "0"], filters = {}, limit = MAX_GENERATED) {
+    const normalized = normalizeBase(base);
+    const masks = goals.map((mask) => [...new Set(String(mask))]);
+    // `baseSize` accepts the compact goal masks (e.g. "01"), while `masks`
+    // here are already expanded arrays used by the generator below.
+    const total = baseSize(normalized, masks.map((mask) => mask.join("")));
+    if (total > limit) throw Error("El desarrollo tendría " + total.toLocaleString("es-ES")
+      + " apuestas. Ajusta la base o el Pleno para no superar " + limit.toLocaleString("es-ES") + ".");
+    const output = [];
+    const column = Array(14);
+    const visit = (position) => {
+      if (position === 14) {
+        const value = column.join("");
+        if (satisfiesFilters(value, filters))
+          for (const home of masks[0]) for (const away of masks[1]) output.push(value + home + away);
+        return;
+      }
+      for (const sign of normalized[position]) { column[position] = sign; visit(position + 1); }
+    };
+    visit(0);
+    return output;
+  }
+
+  function probabilityMass(bets, probabilities) {
+    const rows = validateProbabilities(probabilities);
+    let mass = 0;
+    const seen = new Set();
+    for (const bet of bets) {
+      const column = bet.slice(0, 14);
+      if (seen.has(column)) continue;
+      seen.add(column);
+      let value = 1;
+      for (let i = 0; i < 14; i++) value *= rows[i][SIGNS.indexOf(column[i])];
+      mass += value;
+    }
+    return mass;
   }
 
   function availableRounds(data, season) {
@@ -116,6 +248,29 @@
     }).sort((a, b) => b.hits - a.hits || b.maximum - a.maximum);
   }
 
+  /** Count tickets that can still finish in each exact 10–15 prize category.
+   * Only finalized 1X2 matches constrain the range; live scores may change.
+   */
+  function categoryPossibilities(bets, rows) {
+    const categories = [15, 14, 13, 12, 11, 10];
+    const counts = Object.fromEntries(categories.map((category) => [category, 0]));
+    const evaluated = evaluate(bets, rows);
+    evaluated.forEach(({ bet, confirmed, maximum }) => {
+      for (const category of categories.slice(1)) {
+        if (confirmed <= category && category <= maximum) counts[category]++;
+      }
+      if (bet.length === 16) {
+        const noFinalSignMiss = rows.slice(0, 14).every((row, index) =>
+          !row.final || bet[index] === row.sign,
+        );
+        const pleno = rows[14];
+        const noFinalPlenoMiss = !pleno?.final || bet.slice(14) === pleno.pleno;
+        if (noFinalSignMiss && noFinalPlenoMiss) counts[15]++;
+      }
+    });
+    return categories.map((category) => ({ category, possibleBets: counts[category] }));
+  }
+
   function awardBreakdown(bets, official) {
     const counts = {};
     bets.forEach((bet) => {
@@ -135,6 +290,9 @@
   }
 
   root.EscrutinioEngine = { roundLine, parseKickoff, formatKickoff, parseDates, parseHours, parseNames,
-    availableRounds, currentRound, scrutiny, live, evaluate, awardBreakdown };
+    normalizeTeam, sameTeamName,
+    normalizeBase, validateProbabilities, coverageBase, coverageCounts, baseSize, satisfiesFilters,
+    generateBets, probabilityMass, MAX_GENERATED,
+    availableRounds, currentRound, scrutiny, live, evaluate, categoryPossibilities, awardBreakdown };
   if (typeof module !== "undefined") module.exports = root.EscrutinioEngine;
 })(typeof globalThis !== "undefined" ? globalThis : this);

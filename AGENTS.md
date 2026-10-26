@@ -1,7 +1,7 @@
 # Guía de desarrollo
 
-- Alcance inicial: app Android para **Escrutinio**. No añadir generación de
-  apuestas, optimización ni filtros en esta fase.
+- La app Android incluye pronósticos, filtros, análisis y sistemas. Mantener
+  esos flujos al añadir y mejorar **Escrutinio**.
 - Mantener Java como puente pequeño de Android y HTML/CSS/JavaScript para la
   interfaz y la comprobación local. No introducir servidor propio.
 - Los datos descargados se identifican por temporada y jornada. Comprobar la

@@ -1,5 +1,18 @@
 # Cambios
 
+## 0.2.1 — escrutinio visible en Quiniela AI Studio
+
+- Añade una pestaña **Escrutinio** a la app completa, junto a Quiniela, Filtros,
+  Análisis, Sistemas y Ajustes.
+- Permite importar TXT o revisar el desarrollo actual, consultar marcadores y
+  calcular premios solo con el PRE definitivo.
+- Mantiene los datos de la app y permite exportar TXT también en Android 6–9.
+
+## 0.2.0 — app Quiniela AI Studio
+
+- Versión instalada previamente en algunos teléfonos, sin acceso visible a la
+  pantalla de escrutinio.
+
 ## 0.1.3 — compatibilidad con Android 6 o posterior
 
 - Reduce la versión mínima de Android 10 a Android 6 para permitir instalar la

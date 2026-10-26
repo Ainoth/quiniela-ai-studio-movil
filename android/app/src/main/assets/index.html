@@ -4,56 +4,137 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#071a33" />
-    <title>Quiniela AI Studio · Escrutinio</title>
+    <title>Quiniela AI Studio</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <header>
+    <header class="topbar">
       <div class="brand"><span class="mark">✓</span><span>QUINIELA <em>AI STUDIO</em></span></div>
-      <div class="edition">MÓVIL <b>· ESCRUTINIO</b></div>
+      <span id="roundBadge" class="round-badge">SIN JORNADA</span>
     </header>
+
     <main>
-      <section class="hero">
-        <p class="eyebrow">TUS APUESTAS, PARTIDO A PARTIDO</p>
-        <h1>Escrutinio</h1>
-        <p>Importa tu TXT y comprueba los aciertos de la jornada.</p>
-      </section>
-
-      <section class="controls card" aria-label="Jornada">
-        <div class="select-row">
-          <label>Temporada<select id="seasonSelect" disabled aria-label="Temporada"></select></label>
-          <label>Jornada<select id="roundSelect" disabled aria-label="Jornada"></select></label>
-          <button id="currentButton" class="quiet" onclick="goCurrentRound()" disabled>En curso</button>
+      <section id="page-quiniela" class="page active" aria-labelledby="title-quiniela">
+        <div class="page-heading">
+          <div><span class="eyebrow">CREA TU SISTEMA</span><h1 id="title-quiniela">Quiniela normal</h1></div>
+          <button id="updateDataButton" class="icon-button" onclick="updateData()" aria-label="Actualizar datos">↻</button>
         </div>
-        <div class="action-row">
-          <button id="updateButton" class="primary" onclick="updateData()">↻ Actualizar datos</button>
-          <button id="refreshButton" class="quiet" onclick="refreshResults()" disabled>↻ Actualizar marcador</button>
-          <button id="importButton" class="outline" onclick="Android.pickTextFile()">＋ Importar apuestas TXT</button>
-        </div>
-        <div id="status" class="status">Actualiza los datos de la jornada para empezar.</div>
+        <p id="status" class="status">Descarga los partidos para empezar. Tus sistemas se guardan en este teléfono.</p>
+
+        <section class="card round-card" aria-label="Jornada">
+          <div class="select-row">
+            <label>Temporada<select id="seasonSelect" disabled></select></label>
+            <label>Jornada<select id="roundSelect" disabled></select></label>
+            <button id="currentButton" class="quiet" onclick="goCurrentRound()" disabled>En curso</button>
+          </div>
+          <div class="workflow"><b>1</b> Descarga porcentajes <i>›</i> <b>2</b> Elige la cobertura <i>›</i> <b>3</b> Genera y guarda</div>
+        </section>
+
+        <section class="card source-card">
+          <div class="section-title"><div><span class="eyebrow">SIGNOS Y PORCENTAJES</span><h2>Elige la fuente</h2></div><span id="sourceAge" class="mini-label">Sin descargar</span></div>
+          <div class="segmented source-options" role="group" aria-label="Fuente de porcentajes">
+            <button data-source="market" onclick="selectSource('market')">Mercado</button>
+            <button data-source="public" onclick="selectSource('public')">Popularidad</button>
+            <button data-source="manual" onclick="selectSource('manual')">Manual</button>
+          </div>
+          <p id="sourceNote" class="help-text">Mercado estima probabilidades deportivas; Popularidad muestra signos jugados. No son equivalentes ni predicen aciertos.</p>
+          <div class="coverage-head"><strong>Cobertura rápida</strong><span id="coverageCaption">0 fijos · 0 dobles · 0 triples</span></div>
+          <div id="coverageLevels" class="level-grid" role="group" aria-label="Nivel de cobertura"></div>
+          <button id="fillBaseButton" class="secondary full" onclick="fillBase()" disabled>Rellenar la base según porcentajes</button>
+        </section>
+
+        <section class="card fixture-card">
+          <div class="section-title"><div><span class="eyebrow">BASE DE LA QUINIELA</span><h2>Marca 1 · X · 2</h2></div><span id="baseCount" class="progress-pill">0 apuestas base</span></div>
+          <div id="fixtures" class="fixtures"><div class="empty">Actualiza datos para mostrar los 14 partidos.</div></div>
+        </section>
+
+        <section class="card pleno-card">
+          <div class="section-title"><div><span class="eyebrow">PLENO AL 15</span><h2>Goles de cada equipo</h2></div><span id="plenoCount" class="progress-pill">1 resultado</span></div>
+          <div id="plenoChoices" class="pleno-grid"></div>
+          <p class="help-text">M equivale a 3 o más goles. Cada selección combina los dos equipos y multiplica las apuestas.</p>
+        </section>
+
+        <section class="card generated-card">
+          <div class="section-title"><div><span class="eyebrow">DESARROLLO</span><h2 id="generatedTitle">Todavía no generado</h2></div><span id="generatedCost" class="cost-pill">0,00 €</span></div>
+          <p id="generatedNote" class="help-text">El desarrollo se calcula con la base marcada y los filtros activos.</p>
+          <div id="betPreview" class="bet-preview"></div>
+          <div class="button-row">
+            <button class="secondary" onclick="saveCurrentSystem()">Guardar sistema</button>
+            <button class="outline" onclick="exportCurrentTxt()">Guardar TXT</button>
+          </div>
+        </section>
       </section>
 
-      <section class="summary-card" aria-live="polite">
-        <div class="summary-icon">⚽</div>
-        <div class="summary-copy"><span id="betCaption">APUESTAS</span><strong id="hitSummary">Carga una jornada y un TXT</strong><small id="hitDetail">Los datos se guardan en este teléfono.</small></div>
+      <section id="page-condiciones" class="page" aria-labelledby="title-condiciones">
+        <div class="page-heading"><div><span class="eyebrow">FILTROS OPCIONALES</span><h1 id="title-condiciones">Condiciones</h1></div></div>
+        <p class="intro">Estas reglas se aplican al generar. Desactivarlas conserva sus valores.</p>
+        <section class="card condition-card">
+          <div class="section-title"><div><span class="eyebrow">CUENTA</span><h2>Cuántos signos</h2></div><label class="switch-label">Aplicar<input id="accountEnabled" type="checkbox" onchange="updateFilters()"></label></div>
+          <div class="count-grid"><span>Signo</span><span>Mín.</span><span>Máx.</span>
+            <b>1</b><input id="min1" type="number" min="0" max="14" onchange="updateFilters()"><input id="max1" type="number" min="0" max="14" onchange="updateFilters()">
+            <b>X</b><input id="minX" type="number" min="0" max="14" onchange="updateFilters()"><input id="maxX" type="number" min="0" max="14" onchange="updateFilters()">
+            <b>2</b><input id="min2" type="number" min="0" max="14" onchange="updateFilters()"><input id="max2" type="number" min="0" max="14" onchange="updateFilters()">
+            <b>V</b><input id="minV" type="number" min="0" max="14" onchange="updateFilters()"><input id="maxV" type="number" min="0" max="14" onchange="updateFilters()">
+          </div>
+          <p class="help-text">V agrupa X y 2 como variantes. Los mínimos y máximos se comprueban sobre los 14 partidos.</p>
+        </section>
+        <section class="card condition-card">
+          <div class="section-title"><div><span class="eyebrow">RACHAS</span><h2>Variantes seguidas</h2></div><label class="switch-label">Aplicar<input id="streakEnabled" type="checkbox" onchange="updateFilters()"></label></div>
+          <label class="field-label" for="maxVariantRun">Máxima racha de X/2</label>
+          <div class="range-row"><input id="maxVariantRun" type="range" min="1" max="14" value="14" oninput="updateStreakValue()"><output id="maxVariantRunValue">14</output></div>
+          <p class="help-text">Una X o un 2 cuentan como variante; el Pleno queda fuera de esta condición.</p>
+        </section>
+        <section class="card condition-summary"><strong id="filterStatus">Filtros desactivados</strong><span id="filterEffect">Activa una condición para usarla en el siguiente desarrollo.</span></section>
       </section>
 
-      <section class="card match-card">
-        <div class="section-title"><div><span class="eyebrow">RESULTADO POR ENCUENTRO</span><h2>Partidos</h2></div><span id="matchProgress" class="progress-pill">0/14</span></div>
-        <div id="matches" class="matches"><div class="empty">Los partidos aparecerán al actualizar los datos.</div></div>
+      <section id="page-analisis" class="page" aria-labelledby="title-analisis">
+        <div class="page-heading"><div><span class="eyebrow">REVISIÓN DEL SISTEMA</span><h1 id="title-analisis">Análisis</h1></div></div>
+        <p class="intro">Resumen del desarrollo abierto. Las estimaciones usan los porcentajes seleccionados y no garantizan resultados.</p>
+        <div id="analysisCards" class="analysis-grid"></div>
+        <section class="card analysis-detail"><div class="section-title"><div><span class="eyebrow">DISTRIBUCIÓN</span><h2>Base por partido</h2></div></div><div id="analysisBase" class="analysis-base"></div></section>
+        <section class="card model-note"><span class="eyebrow">SOBRE LOS PORCENTAJES</span><p>Mercado y Popularidad son fuentes distintas. La cobertura rápida ordena los signos según la fuente elegida; Quiniela AI Studio no usa un modelo predictivo entrenado.</p></section>
       </section>
 
-      <section id="prizeCard" class="prize-card card">
-        <div class="prize-top"><span class="trophy">★</span><div><span class="eyebrow">REPARTO PUBLICADO</span><h2>Premios</h2></div></div>
-        <div id="prizes" class="prizes"><div class="empty">El desglose económico aparece cuando se publica el escrutinio definitivo.</div></div>
-        <small class="disclaimer">Cálculo sobre el TXT importado. No confirma que el boleto esté sellado ni acredita un cobro.</small>
+      <section id="page-sistemas" class="page" aria-labelledby="title-sistemas">
+        <div class="page-heading"><div><span class="eyebrow">GUARDADOS EN EL TELÉFONO</span><h1 id="title-sistemas">Mis sistemas</h1></div></div>
+        <p class="intro">Guarda una copia del sistema actual por temporada y jornada. Puedes abrirla o exportarla como TXT.</p>
+        <section class="card save-card"><label class="field-label" for="systemName">Nombre del sistema</label><input id="systemName" type="text" maxlength="60" placeholder="Mi quiniela"><button class="primary full" onclick="saveCurrentSystem()">Guardar sistema actual</button></section>
+        <div id="systemsList" class="systems-list"><div class="empty">Todavía no hay sistemas guardados.</div></div>
       </section>
 
-      <footer>Quiniela AI Studio · Consulta personal · No realiza apuestas ni pagos</footer>
+      <section id="page-ajustes" class="page" aria-labelledby="title-ajustes">
+        <div class="page-heading"><div><span class="eyebrow">PREFERENCIAS</span><h1 id="title-ajustes">Ajustes</h1></div></div>
+        <section class="card settings-card"><label class="field-label" for="priceInput">Precio por apuesta (€)</label><input id="priceInput" type="number" min="0.01" max="10" step="0.01" onchange="updatePrice()"><p class="help-text">El precio sirve para calcular el coste estimado. Comprueba el importe antes de usar un archivo fuera de la app.</p></section>
+        <section class="card settings-card"><h2>Datos y privacidad</h2><p>Jornadas, porcentajes y sistemas se conservan en este dispositivo. Las descargas solo consultan WIN1X2 y Quinielista. Guardar un TXT no lo envía ni realiza apuestas.</p></section>
+        <section class="card settings-card"><button class="outline full" onclick="updateData()">Actualizar calendario y porcentajes</button><p id="dataUpdated" class="help-text">Todavía no se han descargado datos.</p></section>
+      </section>
+
+      <section id="page-escrutinio" class="page" aria-labelledby="title-escrutinio">
+        <div class="page-heading"><div><span class="eyebrow">RESULTADOS Y PREMIOS</span><h1 id="title-escrutinio">Escrutinio</h1></div></div>
+        <p class="intro">Comprueba tus apuestas por partido. Los premios solo aparecen con el escrutinio definitivo de WIN1X2.</p>
+        <section class="card scrutiny-controls">
+          <div class="select-row"><label>Temporada<select id="scrutinySeason" onchange="scrutinyChangeSeason(this.value)"></select></label><label>Jornada<select id="scrutinyRound" onchange="scrutinyChangeRound(this.value)"></select></label></div>
+          <div class="button-row scrutiny-actions"><button class="primary" onclick="Android.pickTextFile()">Importar apuestas TXT</button><button class="outline" onclick="scrutinyUseDevelopment()">Usar desarrollo actual</button><button class="outline" onclick="scrutinyRefresh()">Actualizar marcador</button><button class="outline" onclick="scrutinyUpdateData()">Descargar datos</button></div>
+          <p id="scrutinyStatus" class="help-text">Descarga los datos y selecciona o importa tus apuestas para comenzar.</p>
+        </section>
+        <section class="card scrutiny-summary"><span class="eyebrow">TUS ACIERTOS</span><strong id="scrutinySummary">Importa un TXT o usa el desarrollo actual.</strong><small id="scrutinyDetail">Las apuestas se guardan por temporada y jornada.</small></section>
+        <section class="card"><div class="section-title"><div><span class="eyebrow">PARTIDO A PARTIDO</span><h2>Marcadores y signos</h2></div><span id="scrutinyProgress" class="progress-pill">0/14</span></div><div id="scrutinyMatches" class="matches"><div class="empty">Actualiza los datos para mostrar los partidos.</div></div></section>
+        <section class="card scrutiny-prizes"><div class="section-title"><div><span class="eyebrow">ESCRUTINIO OFICIAL</span><h2>Premios</h2></div></div><div id="scrutinyPrizes"><div class="empty">Disponible cuando WIN1X2 publique el escrutinio definitivo.</div></div></section>
+      </section>
     </main>
 
-    <div id="loading" class="loading hidden" role="status"><div class="spinner"></div><strong id="loadingText">Actualizando resultados…</strong></div>
+    <div id="actionDock" class="action-dock"><div><b id="dockCount">0 apuestas</b><small id="dockCost">0,00 €</small></div><button id="generateButton" class="primary" onclick="generateCurrent()" disabled>Generar quiniela</button></div>
+    <nav class="bottom-nav" aria-label="Secciones principales">
+      <button class="nav-button active" data-page="quiniela"><span>▦</span><small>Quiniela</small></button>
+      <button class="nav-button" data-page="condiciones"><span>☷</span><small>Filtros</small></button>
+      <button class="nav-button" data-page="analisis"><span>◔</span><small>Análisis</small></button>
+      <button class="nav-button" data-page="sistemas"><span>▤</span><small>Sistemas</small></button>
+      <button class="nav-button" data-page="ajustes"><span>⚙</span><small>Ajustes</small></button>
+      <button class="nav-button" data-page="escrutinio"><span>✓</span><small>Escrutinio</small></button>
+    </nav>
+    <div id="loading" class="loading hidden" role="status"><div class="spinner"></div><strong id="loadingText">Cargando…</strong></div>
     <script src="engine.js"></script>
     <script src="app.js"></script>
+    <script src="scrutiny.js"></script>
   </body>
 </html>
