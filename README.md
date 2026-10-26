@@ -1,8 +1,9 @@
-# Quiniela AI Studio Móvil · Escrutinio
+# Quiniela AI Studio Móvil
 
-Primera app Android independiente de Quiniela AI Studio. Su único objetivo por
-ahora es comprobar los aciertos de un TXT para una temporada y jornada, consultar
-marcadores y mostrar premios cuando el escrutinio definitivo está publicado.
+La app móvil de Quiniela AI Studio incluye el módulo **Escrutinio** para
+comprobar los aciertos de un TXT por temporada y jornada, consultar marcadores y
+mostrar premios cuando el escrutinio definitivo está publicado. En Android se
+identifica como **Quiniela AI Studio**.
 
 ## Uso
 
@@ -48,6 +49,6 @@ asocia un resultado externo si no coincide con ellos.
 
 ## Alcance actual
 
-Esta versión no crea quinielas, no genera sistemas, no optimiza presupuestos y
-no comparte datos con el escritorio. La siguiente fase podrá añadir más partes
-del producto después de validar esta pantalla de Escrutinio en Android.
+El módulo actual permite escrutar apuestas guardadas en el teléfono. No crea
+quinielas, no genera sistemas, no optimiza presupuestos y no comparte datos con
+el escritorio.

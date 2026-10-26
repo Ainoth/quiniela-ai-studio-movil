@@ -1,5 +1,14 @@
 # Cambios
 
+## 0.1.2 — Escrutinio dentro de Quiniela AI Studio
+
+- La app aparece como **Quiniela AI Studio** en el teléfono para que el
+  escrutinio quede integrado y sea fácil de encontrar.
+- Mantiene la pantalla de escrutinio, importación de TXT, marcadores y premios
+  oficiales de la versión anterior.
+- Incrementa el número de versión Android para permitir instalar la
+  actualización sobre la app existente.
+
 ## 0.1.1 — ajustes tras prueba en móvil
 
 - Separa fecha y hora en la ficha de cada partido para mejorar la lectura.
