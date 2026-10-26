@@ -1,5 +1,13 @@
 # Cambios
 
+## 0.2.3 — resumen en directo y estimación orientativa
+
+- Resume aciertos, fallos confirmados, aciertos provisionales y partidos
+  pendientes para la mejor apuesta.
+- Actualiza los marcadores cada minuto mientras Escrutinio está abierto y al
+  volver a la app.
+- Añade acceso a la estimación orientativa de premios de Quinielista.
+
 ## 0.2.2 — presentación y validación de marcadores
 
 - Da formato legible a los marcadores partido a partido.

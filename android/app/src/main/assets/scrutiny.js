@@ -80,6 +80,13 @@ function renderScrutiny() {
   const evaluated = bets.length && results.length ? E.evaluate(bets, results) : [];
   const best = evaluated[0];
   const known = results.slice(0, 14).filter((row) => row.sign).length;
+  const finalized = results.slice(0, 14).filter((row) => row.final && row.sign).length;
+  const confirmedHits = best?.confirmed || 0;
+  const confirmedMisses = best ? finalized - best.confirmed : 0;
+  const provisionalHits = best ? Math.max(0, best.hits - best.confirmed) : 0;
+  byId("scrutinyHits").textContent = best ? confirmedHits + (provisionalHits ? " + " + provisionalHits + "*" : "") : "—";
+  byId("scrutinyMisses").textContent = best ? String(confirmedMisses) : "—";
+  byId("scrutinyPending").textContent = String(14 - finalized);
   const prize = official && bets.length ? E.awardBreakdown(bets, official) : null;
 
   byId("scrutinyProgress").textContent = known + "/14";
@@ -88,11 +95,11 @@ function renderScrutiny() {
     : !bets.length ? "Importa un TXT o usa el desarrollo actual."
       : !known ? bets.length + " apuestas · esperando resultados"
         : official ? (best ? best.hits + "/14 aciertos · " + scrutinyFormatMoney(prize.totalCents) : "Escrutinio definitivo disponible")
-          : best.hits + "/14 aciertos actuales";
+          : best.hits + "/14 aciertos actuales · mejor apuesta";
   byId("scrutinyDetail").textContent = !bets.length
     ? (saved.name || "Las apuestas se guardan por temporada y jornada.")
     : official ? bets.length + " apuestas · escrutinio definitivo · " + (saved.name || "TXT importado")
-      : best ? best.confirmed + " confirmados · máximo " + best.maximum + " · " + bets.length + " apuestas · puede cambiar"
+      : best ? confirmedHits + " aciertos confirmados · " + confirmedMisses + " fallos confirmados · " + (14 - finalized) + " pendientes · " + bets.length + " apuestas · * acierto provisional"
         : bets.length + " apuestas guardadas para " + state.season + " · J" + state.round;
 
   if (!matches.length) {
@@ -129,6 +136,31 @@ function renderScrutiny() {
   }
 }
 window.renderScrutiny = renderScrutiny;
+
+function scrutinyOpenEstimate() {
+  const url = "https://www.eduardolosilla.es/quiniela/ayudas/estimacion";
+  if (window.Android?.openExternal) Android.openExternal(url);
+  else window.open(url, "_blank", "noopener");
+}
+window.scrutinyOpenEstimate = scrutinyOpenEstimate;
+
+let scrutinyPollTimer = null;
+function stopScrutinyPolling() {
+  if (scrutinyPollTimer) clearInterval(scrutinyPollTimer);
+  scrutinyPollTimer = null;
+}
+function startScrutinyPolling() {
+  stopScrutinyPolling();
+  if (document.visibilityState === "visible") scrutinyRefresh(true);
+  scrutinyPollTimer = setInterval(() => {
+    if (document.visibilityState === "visible" && document.querySelector("#page-escrutinio.active")) scrutinyRefresh(true);
+  }, 60000);
+}
+window.startScrutinyPolling = startScrutinyPolling;
+window.stopScrutinyPolling = stopScrutinyPolling;
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && document.querySelector("#page-escrutinio.active")) scrutinyRefresh(true);
+});
 
 function scrutinyChangeSeason(season) {
   if (!state.data || !season) return;

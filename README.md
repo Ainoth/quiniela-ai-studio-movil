@@ -15,7 +15,10 @@ Los datos de WIN1X2 se descargan directamente al teléfono.
 Las apuestas importadas y los datos permanecen en el teléfono. Un TXT solo se
 comprueba localmente; la app no envía apuestas ni realiza pagos.
 
-La versión 0.2.2 requiere Android 6.0 (API 23) o posterior.
+La versión 0.2.3 requiere Android 6.0 (API 23) o posterior.
+
+El código de la app exclusiva de escrutinio que precedió a la integración está
+conservado en la rama `escrutinio-autonomo` (versión 0.1.3).
 
 ## Compilar
 
@@ -28,6 +31,12 @@ cd android
 
 El APK de pruebas queda en `android/app/build/outputs/apk/debug/app-debug.apk`.
 
+## Estimación orientativa
+
+Durante los partidos, **Consultar estimación de Quinielista** abre su cálculo
+orientativo en el navegador. Puede variar respecto al premio definitivo; el
+desglose propio de la app usa los importes oficiales de WIN1X2.
+
 ## Verificación
 
 ```bash
@@ -35,5 +44,5 @@ node --test tests/*.test.cjs
 cd android && ./gradlew lintDebug assembleDebug
 ```
 
-La app no estima premios con marcadores provisionales y valida que los equipos
+La app no calcula importes con marcadores provisionales y valida que los equipos
 del marcador coincidan con la jornada seleccionada.

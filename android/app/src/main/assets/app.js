@@ -212,6 +212,7 @@ function renderGenerated() {
 }
 function setTab(section) {
   if (!SECTIONS.includes(section)) return;
+  if (window.stopScrutinyPolling) window.stopScrutinyPolling();
   SECTIONS.forEach((key) => {
     byId("page-" + key).classList.toggle("active", key === section);
     document.querySelector('.nav-button[data-page="' + key + '"]').classList.toggle("active", key === section);
@@ -222,7 +223,7 @@ function setTab(section) {
   if (section === "sistemas") renderSystems();
   if (section === "escrutinio" && window.renderScrutiny) {
     window.renderScrutiny();
-    if (window.scrutinyRefresh) window.scrutinyRefresh(true);
+    if (window.startScrutinyPolling) window.startScrutinyPolling();
   }
   window.scrollTo(0, 0);
 }
