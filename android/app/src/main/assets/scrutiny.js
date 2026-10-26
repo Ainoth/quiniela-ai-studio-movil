@@ -45,13 +45,16 @@ function scrutinyValidateLiveRows(rows) {
   const matches = fixture(state.round, state.season);
   if (rows.length !== 15 || rows.some((row, index) => +row.orden !== index + 1))
     throw Error("No hay marcadores publicados para esta jornada.");
-  rows.forEach((row, index) => {
+  return rows.map((row, index) => {
     const match = matches[index];
-    if (scrutinyNormalizeTeam(row.local) !== scrutinyNormalizeTeam(match.home) ||
-        scrutinyNormalizeTeam(row.visitante) !== scrutinyNormalizeTeam(match.away))
-      throw Error("Los equipos del partido " + (index + 1) + " no coinciden; se descartan esos marcadores.");
+    const sameHome = E.sameTeamName ? E.sameTeamName(row.local, match.home) : scrutinyNormalizeTeam(row.local) === scrutinyNormalizeTeam(match.home);
+    const sameAway = E.sameTeamName ? E.sameTeamName(row.visitante, match.away) : scrutinyNormalizeTeam(row.visitante) === scrutinyNormalizeTeam(match.away);
+    if (!sameHome || !sameAway) return {
+      orden: index + 1, local: match.home, visitante: match.away, score: "—",
+      sign: "", pleno: "", final: false, status: "Equipos distintos · marcador descartado",
+    };
+    return E.live(row);
   });
-  return rows.map(E.live);
 }
 function scrutinyFormatMoney(cents) {
   return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(cents / 100);
@@ -193,7 +196,8 @@ async function scrutinyRefresh(silent = false) {
     scrutinyState().live[key] = { capturedAt: new Date().toISOString(), rows };
     save(); renderScrutiny();
     const finalCount = rows.slice(0, 14).filter((row) => row.final).length;
-    scrutinyStatus("Marcadores recibidos · " + finalCount + "/14 partidos finalizados · " + new Date().toLocaleTimeString("es-ES") + ".", "success");
+    const rejected = rows.filter((row) => row.status === "Equipos distintos · marcador descartado").length;
+    scrutinyStatus("Marcadores recibidos · " + finalCount + "/14 finalizados" + (rejected ? " · " + rejected + " partido(s) omitido(s) por no coincidir los equipos" : "") + " · " + new Date().toLocaleTimeString("es-ES") + ".", "success");
   } catch (error) {
     if (key !== scrutinyKey()) return;
     const cached = scrutinyState().live[key];

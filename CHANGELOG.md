@@ -1,5 +1,11 @@
 # Cambios
 
+## 0.2.2 — presentación y validación de marcadores
+
+- Da formato legible a los marcadores partido a partido.
+- Omite solo los partidos cuyos equipos no coinciden con los del calendario y
+  conserva los marcadores válidos del resto de la jornada.
+
 ## 0.2.1 — escrutinio visible en Quiniela AI Studio
 
 - Añade una pestaña **Escrutinio** a la app completa, junto a Quiniela, Filtros,

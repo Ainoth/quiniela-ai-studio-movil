@@ -15,7 +15,7 @@ Los datos de WIN1X2 se descargan directamente al teléfono.
 Las apuestas importadas y los datos permanecen en el teléfono. Un TXT solo se
 comprueba localmente; la app no envía apuestas ni realiza pagos.
 
-La versión 0.2.1 requiere Android 6.0 (API 23) o posterior.
+La versión 0.2.2 requiere Android 6.0 (API 23) o posterior.
 
 ## Compilar
 
