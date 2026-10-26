@@ -19,6 +19,8 @@ La app guarda datos y apuestas en el teléfono y vuelve a mostrarlos sin conexi�
 El cálculo corresponde al TXT importado; no acredita que el boleto se haya
 sellado o pagado. La app no envía apuestas ni realiza pagos.
 
+La versión 0.1.3 requiere Android 6.0 (API 23) o posterior.
+
 ## Compilar
 
 Con Android SDK 35 y JDK 17:

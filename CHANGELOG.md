@@ -1,5 +1,10 @@
 # Cambios
 
+## 0.1.3 — compatibilidad con Android 6 o posterior
+
+- Reduce la versión mínima de Android 10 a Android 6 para permitir instalar la
+  app en más teléfonos.
+
 ## 0.1.2 — Escrutinio dentro de Quiniela AI Studio
 
 - La app aparece como **Quiniela AI Studio** en el teléfono para que el
