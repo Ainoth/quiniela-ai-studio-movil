@@ -1,12 +1,20 @@
 # Cambios
 
+## 0.2.4 — Escrutinio al estilo autónomo y previsión integrada
+
+- Recupera la presentación de la app Escrutinio autónomo dentro de la pestaña.
+- Muestra la estimación orientativa en la app, con premios por categoría y
+  escenario basado en marcadores actuales y favoritos de los partidos pendientes.
+- Obtiene recaudación, bote y porcentajes publicados para calcular los importes;
+  no abre páginas externas.
+
 ## 0.2.3 — resumen en directo y estimación orientativa
 
 - Resume aciertos, fallos confirmados, aciertos provisionales y partidos
   pendientes para la mejor apuesta.
 - Actualiza los marcadores cada minuto mientras Escrutinio está abierto y al
   volver a la app.
-- Añade acceso a la estimación orientativa de premios de Quinielista.
+- Añadía acceso a la previsión pública de premios.
 
 ## 0.2.2 — presentación y validación de marcadores
 

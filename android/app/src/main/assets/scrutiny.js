@@ -1,12 +1,14 @@
 "use strict";
 
 const SCRUTINY_LIVE_URL = "https://static.dataradar.es/marcador/json/partidos.json";
+const SCRUTINY_ESTIMATE_URL = "https://www.eduardolosilla.es/quiniela/ayudas/estimacion?jornada=";
 
 function scrutinyKey() { return state.season + ":" + state.round; }
 function scrutinyState() {
   if (!state.scrutinyBets || typeof state.scrutinyBets !== "object") state.scrutinyBets = {};
   if (!state.scrutinyLive || typeof state.scrutinyLive !== "object") state.scrutinyLive = {};
-  return { bets: state.scrutinyBets, live: state.scrutinyLive };
+  if (!state.scrutinyEstimates || typeof state.scrutinyEstimates !== "object") state.scrutinyEstimates = {};
+  return { bets: state.scrutinyBets, live: state.scrutinyLive, estimates: state.scrutinyEstimates };
 }
 function scrutinyStatus(message, kind = "") {
   const el = byId("scrutinyStatus");
@@ -87,6 +89,7 @@ function renderScrutiny() {
   byId("scrutinyHits").textContent = best ? confirmedHits + (provisionalHits ? " + " + provisionalHits + "*" : "") : "—";
   byId("scrutinyMisses").textContent = best ? String(confirmedMisses) : "—";
   byId("scrutinyPending").textContent = String(14 - finalized);
+  byId("scrutinyBetCaption").textContent = bets.length ? (saved.name || bets.length + " APUESTAS") : "TUS APUESTAS";
   const prize = official && bets.length ? E.awardBreakdown(bets, official) : null;
 
   byId("scrutinyProgress").textContent = known + "/14";
@@ -134,15 +137,127 @@ function renderScrutiny() {
         "</span><span>" + scrutinyFormatMoney(row.amountCents) + "</span><b>" + scrutinyFormatMoney(row.subtotalCents) + "</b></div>").join("") +
       '</div><div class="prize-total"><span>Premio calculado</span><strong>' + scrutinyFormatMoney(breakdown.totalCents) + "</strong></div>";
   }
+  renderScrutinyEstimate(bets, results, official);
 }
 window.renderScrutiny = renderScrutiny;
 
-function scrutinyOpenEstimate() {
-  const url = "https://www.eduardolosilla.es/quiniela/ayudas/estimacion";
-  if (window.Android?.openExternal) Android.openExternal(url);
-  else window.open(url, "_blank", "noopener");
+function scrutinyParseLocaleNumber(value) {
+  const parsed = Number(String(value || "0").replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", "."));
+  return Number.isFinite(parsed) ? parsed : 0;
 }
-window.scrutinyOpenEstimate = scrutinyOpenEstimate;
+function scrutinyEstimatePayload(html) {
+  const embedded = String(html).match(/<script id="eduardo-losilla-state" type="application\/json">([\s\S]*?)<\/script>/i);
+  if (!embedded) throw Error("La fuente de estimación no devolvió sus datos de jornada.");
+  const transfer = JSON.parse(embedded[1].replace(/&q;/g, '"').replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">"));
+  const year = 2000 + Number(state.season.slice(-2));
+  const round = transfer["jornada_" + state.round + "_" + year];
+  const probability = transfer["probabilidades_" + state.round + "_" + year];
+  if (!round || +round.jornada !== +state.round || +round.temporada !== year || !probability)
+    throw Error("Quinielista todavía no ofrece datos de estimación para " + state.season + " · J" + state.round + ".");
+  const played = probability.partidos?.quinielista || [];
+  const market = probability.partidos?.real || [];
+  if (played.length < 15) throw Error("Faltan porcentajes jugados para calcular la estimación.");
+  const toOdds = (row) => {
+    const values = [row.porc_1_dec ?? row.porc_1, row.porc_X_dec ?? row.porc_X, row.porc_2_dec ?? row.porc_2].map(Number);
+    const sum = values.reduce((total, value) => total + value, 0);
+    if (!sum || values.some((value) => !Number.isFinite(value) || value < 0)) throw Error("Los porcentajes de la fuente no son válidos.");
+    return values.map((value) => value / sum);
+  };
+  const pleno = played[14];
+  const goalShare = (side, goals) => Number(pleno["porc_15" + side + "_" + goals + "_dec"] ?? pleno["porc_15" + side + "_" + goals] ?? 0) / 100;
+  const home = ["0", "1", "2", "M"].map((goal) => goalShare("L", goal));
+  const away = ["0", "1", "2", "M"].map((goal) => goalShare("V", goal));
+  return {
+    revenueCents: Math.round(scrutinyParseLocaleNumber(round.recaudacion) * 100),
+    boteCents: Math.round(scrutinyParseLocaleNumber(round.boteEstimacion || round.textoBote) * 100),
+    ticketCents: Math.round(Number(round.costeApuesta || 0.75) * 100),
+    public: played.slice(0, 14).map(toOdds), market: market.length >= 14 ? market.slice(0, 14).map(toOdds) : null,
+    plenoHome: home, plenoAway: away, capturedAt: new Date().toISOString(),
+  };
+}
+let scrutinyEstimateBusy = false;
+async function scrutinyUpdateEstimate(force = false) {
+  if (!state.data || !state.season || !state.round) return;
+  const key = scrutinyKey();
+  if (scrutinyOfficial()) return renderScrutiny();
+  const cached = scrutinyState().estimates[key];
+  if (scrutinyEstimateBusy || (!force && cached && Date.now() - Date.parse(cached.capturedAt) < 10 * 60 * 1000)) return;
+  scrutinyEstimateBusy = true;
+  const target = byId("scrutinyEstimate");
+  if (!cached) target.innerHTML = '<div class="empty">Calculando estimación orientativa…</div>';
+  try {
+    const html = await api("text", SCRUTINY_ESTIMATE_URL + state.round + "&temporada=" + (2000 + Number(state.season.slice(-2))));
+    if (key !== scrutinyKey()) return;
+    scrutinyState().estimates[key] = scrutinyEstimatePayload(html);
+    save(); renderScrutiny();
+  } catch (error) {
+    if (key === scrutinyKey() && !cached) target.innerHTML = '<div class="empty">No hay estimación disponible en este momento. ' + escapeHtml(error.message) + '</div>';
+  } finally { scrutinyEstimateBusy = false; }
+}
+window.scrutinyUpdateEstimate = scrutinyUpdateEstimate;
+function renderScrutinyEstimate(bets, results, official) {
+  const card = document.querySelector(".scrutiny-estimate");
+  const target = byId("scrutinyEstimate");
+  card.hidden = !!official;
+  if (official) return;
+  if (!bets.length) {
+    target.innerHTML = '<div class="empty">Importa tus apuestas o usa el desarrollo actual para estimar los premios.</div>';
+    return;
+  }
+  const model = scrutinyState().estimates[scrutinyKey()];
+  if (!model) return;
+  if (!(model.revenueCents > 0) || !(model.ticketCents > 0) || !model.public?.length) {
+    target.innerHTML = '<div class="empty">La fuente todavía no ha publicado recaudación o porcentajes suficientes.</div>';
+    return;
+  }
+  const data = model.market || model.public;
+  const signs = Array.from({ length: 14 }, (_, index) => {
+    if (results[index]?.sign) return results[index].sign;
+    const favorites = data[index];
+    return ["1", "X", "2"][favorites.indexOf(Math.max(...favorites))];
+  });
+  const plenoResult = results[14]?.pleno || (() => {
+    let max = -1, selected = "00";
+    for (let home = 0; home < 4; home++) for (let away = 0; away < 4; away++) {
+      const probability = (model.plenoHome[home] || 0) * (model.plenoAway[away] || 0);
+      if (probability > max) { max = probability; selected = "012M"[home] + "012M"[away]; }
+    }
+    return selected;
+  })();
+  const dist = Array(15).fill(0); dist[0] = 1;
+  signs.forEach((sign, index) => {
+    const hitProbability = model.public[index][["1", "X", "2"].indexOf(sign)];
+    for (let hits = index + 1; hits >= 0; hits--)
+      dist[hits] = (dist[hits] || 0) * (1 - hitProbability) + (hits ? dist[hits - 1] * hitProbability : 0);
+  });
+  const entryCount = model.revenueCents / model.ticketCents;
+  const pools = { 15: model.revenueCents * 0.075 + model.boteCents, 14: model.revenueCents * 0.16,
+    13: model.revenueCents * 0.075, 12: model.revenueCents * 0.075, 11: model.revenueCents * 0.075, 10: model.revenueCents * 0.09 };
+  const plenoProbability = (model.plenoHome["012M".indexOf(plenoResult[0])] || 0) * (model.plenoAway["012M".indexOf(plenoResult[1])] || 0);
+  const expected = {};
+  for (let category = 10; category <= 14; category++) expected[category] = entryCount * dist[category];
+  expected[15] = expected[14] * plenoProbability;
+  const payout = {};
+  for (let category = 10; category <= 14; category++) payout[category] = expected[category] > 0 ? Math.min(pools[category], pools[category] / expected[category]) : 0;
+  payout[15] = expected[15] > 0 ? Math.min(pools[15], pools[15] / expected[15]) + pools[14] / Math.max(1, expected[14]) : 0;
+  const scenarioRows = signs.map((sign, index) => ({ orden: index + 1, sign, final: true }));
+  scenarioRows.push({ orden: 15, pleno: plenoResult, final: true });
+  const scenario = E.evaluate(bets, scenarioRows);
+  const own = Object.fromEntries([10, 11, 12, 13, 14, 15].map((category) => [category, 0]));
+  scenario.forEach((entry) => {
+    if (entry.hits >= 10) {
+      if (entry.hits === 14 && entry.bet.length === 16 && entry.bet.slice(14) === plenoResult) own[15]++;
+      else own[entry.hits]++;
+    }
+  });
+  let totalCents = 0;
+  const prizeRows = [15, 14, 13, 12, 11, 10].map((category) => {
+    const unit = Math.round(payout[category] || 0), subtotal = unit * own[category]; totalCents += subtotal;
+    return '<div class="prize-row"><span>' + (category === 15 ? "Pleno al 15" : category + " aciertos") + '</span><span>' + own[category] + '</span><span>' + (unit ? scrutinyFormatMoney(unit) : "—") + '</span><b>' + (subtotal ? scrutinyFormatMoney(subtotal) : "—") + '</b></div>';
+  }).join("");
+  const updated = new Date(model.capturedAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+  target.innerHTML = '<div class="prize-placeholder">Escenario: marcadores actuales y favoritos para partidos pendientes · datos ' + updated + '</div><div class="prize-table"><div class="prize-head"><span>Categoría</span><span>Tuyas</span><span>€/apuesta</span><span>Subtotal</span></div>' + prizeRows + '</div><div class="prize-total"><span>Estimación en este escenario</span><strong>' + scrutinyFormatMoney(totalCents) + '</strong></div>';
+}
 
 let scrutinyPollTimer = null;
 function stopScrutinyPolling() {
@@ -151,15 +266,19 @@ function stopScrutinyPolling() {
 }
 function startScrutinyPolling() {
   stopScrutinyPolling();
-  if (document.visibilityState === "visible") scrutinyRefresh(true);
+  if (document.visibilityState === "visible") { scrutinyRefresh(true); scrutinyUpdateEstimate(); }
   scrutinyPollTimer = setInterval(() => {
-    if (document.visibilityState === "visible" && document.querySelector("#page-escrutinio.active")) scrutinyRefresh(true);
+    if (document.visibilityState === "visible" && document.querySelector("#page-escrutinio.active")) {
+      scrutinyRefresh(true); scrutinyUpdateEstimate();
+    }
   }, 60000);
 }
 window.startScrutinyPolling = startScrutinyPolling;
 window.stopScrutinyPolling = stopScrutinyPolling;
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible" && document.querySelector("#page-escrutinio.active")) scrutinyRefresh(true);
+  if (document.visibilityState === "visible" && document.querySelector("#page-escrutinio.active")) {
+    scrutinyRefresh(true); scrutinyUpdateEstimate();
+  }
 });
 
 function scrutinyChangeSeason(season) {
@@ -167,16 +286,21 @@ function scrutinyChangeSeason(season) {
   state.season = season;
   const rounds = E.availableRounds(state.data, season);
   state.round = season === state.data.season ? E.currentRound(state.data, season) : (rounds.at(-1)?.round || 0);
-  save(); renderAll(); renderScrutiny(); scrutinyRefresh(true);
+  save(); renderAll(); renderScrutiny(); scrutinyRefresh(true); scrutinyUpdateEstimate();
 }
 function scrutinyChangeRound(round) {
   if (!round) return;
   state.round = Number(round);
-  save(); renderAll(); renderScrutiny(); scrutinyRefresh(true);
+  save(); renderAll(); renderScrutiny(); scrutinyRefresh(true); scrutinyUpdateEstimate();
+}
+function scrutinyGoCurrentRound() {
+  if (!state.data) return scrutinyStatus("Descarga primero los datos de la jornada.", "error");
+  state.season = state.data.season; state.round = E.currentRound(state.data, state.season);
+  save(); renderAll(); renderScrutiny(); scrutinyRefresh(true); scrutinyUpdateEstimate();
 }
 async function scrutinyUpdateData() {
   await updateData();
-  renderScrutiny();
+  renderScrutiny(); scrutinyRefresh(true); scrutinyUpdateEstimate(true);
 }
 function scrutinyUseDevelopment() {
   if (!state.data || !state.round) return scrutinyStatus("Actualiza primero los datos de WIN1X2.", "error");
@@ -184,6 +308,7 @@ function scrutinyUseDevelopment() {
   if (!bets.length) return scrutinyStatus("Todavía no hay un desarrollo generado para esta jornada.", "error");
   scrutinyState().bets[scrutinyKey()] = { name: "Desarrollo actual", bets: bets.slice(), importedAt: new Date().toISOString() };
   save(); renderScrutiny(); scrutinyStatus(bets.length + " apuestas añadidas al escrutinio de " + state.season + " · J" + state.round + ".", "success");
+  scrutinyUpdateEstimate();
 }
 function scrutinyTicketContext(filename) {
   const name = String(filename || "");
@@ -208,6 +333,7 @@ window.onImportedText = (text, filename) => {
   save(); renderAll(); renderScrutiny();
   scrutinyStatus(bets.length + " apuestas importadas para " + state.season + " · J" + state.round + ".", "success");
   scrutinyRefresh(true);
+  scrutinyUpdateEstimate();
 };
 async function scrutinyRefresh(silent = false) {
   if (!state.data || !state.round) return scrutinyStatus("Actualiza los datos de WIN1X2 para consultar esta jornada.");

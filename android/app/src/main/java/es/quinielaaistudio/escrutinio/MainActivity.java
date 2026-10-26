@@ -72,7 +72,7 @@ public class MainActivity extends Activity {
         URL url = new URL(address);
         String host = url.getHost();
         if (!url.getProtocol().equals("https") || !(host.equals("www.win1x2.com") ||
-                host.equals("www.quinielista.es") || host.equals("static.dataradar.es"))) {
+                host.equals("www.quinielista.es") || host.equals("www.eduardolosilla.es") || host.equals("static.dataradar.es"))) {
             throw new IllegalArgumentException("Proveedor no permitido");
         }
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -104,18 +104,6 @@ public class MainActivity extends Activity {
     }
 
     public class Bridge {
-        @JavascriptInterface public void openExternal(String address) {
-            runOnUiThread(() -> {
-                Uri uri = Uri.parse(address);
-                if (!"https".equals(uri.getScheme()) || !"www.eduardolosilla.es".equals(uri.getHost())) {
-                    Toast.makeText(MainActivity.this, "Enlace externo no permitido", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                try { startActivity(new Intent(Intent.ACTION_VIEW, uri)); }
-                catch (Exception error) { Toast.makeText(MainActivity.this, "No se pudo abrir Quinielista", Toast.LENGTH_SHORT).show(); }
-            });
-        }
-
         @JavascriptInterface public void request(String id, String method, String argument) {
             io.execute(() -> {
                 String result;
