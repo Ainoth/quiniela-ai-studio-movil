@@ -2,7 +2,7 @@
 const E = EscrutinioEngine;
 const STORAGE_KEY = "quinielaAiStudioMovilV1";
 const PERCENTAGES_URL = "https://www.quinielista.es/xml2/porcentajes_completo.asp?jornada=";
-const SECTIONS = ["quiniela", "condiciones", "analisis", "sistemas", "ajustes", "escrutinio"];
+const SECTIONS = ["quiniela", "condiciones", "reducciones", "analisis", "sistemas", "ajustes", "escrutinio"];
 let state = {
   data: null, season: "", round: 0, currentRound: 0, updatedAt: "", source: "market",
   percentages: {}, rounds: {}, systems: [], settings: { priceCents: 75 },
@@ -19,6 +19,7 @@ function escapeHtml(value) {
 function newRoundState() {
   return {
     base: Array(14).fill("1"), goals: ["0", "0"], coverageLevel: 0,
+    generation: { mode: "automatic", doubles: 1, triples: 1, maxColumns: 6 },
     filters: { accountEnabled: false, minCounts: { "1": 0, X: 0, "2": 0, V: 0 },
       maxCounts: { "1": 14, X: 14, "2": 14, V: 14 }, streakEnabled: false, maxVariantRun: 14 },
     bets: [], generatedAt: "", selectedSource: "market",
@@ -133,11 +134,19 @@ function selectedProbabilities() {
 }
 function formatPct(value) { return Number.isFinite(value) ? Math.round(value) + "%" : ""; }
 function renderCoverageLevels() {
-  const level = current().coverageLevel;
-  byId("coverageLevels").innerHTML = Array.from({ length: 11 }, (_, n) =>
-    '<button class="' + (n === level ? "active" : "") + '" onclick="selectCoverage(' + n + ')">' + n + "</button>",
-  ).join("");
-  const counts = E.coverageCounts(level);
+  const round = current();
+  if (!round.generation) round.generation = { mode: "automatic", doubles: 1, triples: 1, maxColumns: 6 };
+  const generation = round.generation;
+  byId("generationMode").value = generation.mode;
+  byId("doubleCount").value = generation.doubles;
+  byId("tripleCount").value = generation.triples;
+  byId("maxColumns").value = generation.maxColumns;
+  byId("doubleCount").disabled = generation.mode !== "manual";
+  byId("tripleCount").disabled = generation.mode !== "manual";
+  let counts = { fixed: 14 - generation.doubles - generation.triples, doubles: generation.doubles, triples: generation.triples };
+  if (generation.mode === "automatic" && selectedProbabilities()) {
+    try { const choice = E.automaticBase(selectedProbabilities(), generation.maxColumns); counts = { fixed: 14-choice.doubles-choice.triples, doubles: choice.doubles, triples: choice.triples }; } catch (_) {}
+  }
   byId("coverageCaption").textContent = counts.fixed + " fijos · " + counts.doubles + " dobles · " + counts.triples + " triples";
   const hasSource = !!selectedProbabilities();
   byId("fillBaseButton").disabled = !isEditable() || !hasSource;
@@ -414,14 +423,29 @@ function selectSource(source) {
   save(); renderAll();
 }
 function selectCoverage(level) { current().coverageLevel = Number(level); save(); renderAll(); }
+function setGenerationMode(mode) { current().generation.mode = mode === "manual" ? "manual" : "automatic"; save(); renderAll(); }
+function setGenerationCounts() {
+  const generation = current().generation || (current().generation = {});
+  generation.doubles = Math.max(0, Math.min(14, Number(byId("doubleCount").value) || 0));
+  generation.triples = Math.max(0, Math.min(14-generation.doubles, Number(byId("tripleCount").value) || 0));
+  generation.maxColumns = Math.max(1, Number(byId("maxColumns").value) || 1);
+  byId("tripleCount").value = generation.triples;
+  save(); renderAll();
+}
 function fillBase() {
   if (!isEditable()) return setStatus("La jornada seleccionada es solo de consulta.", "error");
   const probabilities = selectedProbabilities();
   if (!probabilities) return setStatus("Descarga una fuente de porcentajes antes de rellenar la base.", "error");
-  current().base = E.coverageBase(probabilities, current().coverageLevel);
+  const generation = current().generation || { mode: "automatic", doubles: 1, triples: 1, maxColumns: 6 };
+  let chosen;
+  try { chosen = generation.mode === "manual"
+    ? { base: E.configuredBase(probabilities, generation.doubles, generation.triples, generation.maxColumns), doubles: generation.doubles, triples: generation.triples }
+    : E.automaticBase(probabilities, generation.maxColumns); }
+  catch (error) { return setStatus(error.message, "error"); }
+  current().base = chosen.base;
   current().bets = [];
   save(); renderAll();
-  const counts = E.coverageCounts(current().coverageLevel);
+  const counts = { fixed: 14-chosen.doubles-chosen.triples, doubles: chosen.doubles, triples: chosen.triples };
   setStatus("Base rellenada según " + current().selectedSource + ": " + counts.fixed + " fijos, " + counts.doubles + " dobles y " + counts.triples + " triples.", "success");
 }
 function toggleSign(index, sign) {
@@ -464,6 +488,44 @@ function generateCurrent() {
     } catch (error) { setStatus(error.message, "error"); }
     finally { setBusy(false); renderAll(); }
   }, 35);
+}
+function applyReduction() {
+  const round = current();
+  if (!round.bets?.length) return setStatus("Genera primero las apuestas completas.", "error");
+  const budget = Number(byId("reductionBudget").value);
+  const target = Math.floor(budget * 100 / state.settings.priceCents);
+  if (!Number.isFinite(budget) || budget <= 0 || target < 1) return setStatus("El presupuesto debe cubrir al menos una apuesta.", "error");
+  const source = round.unreducedBets?.length ? round.unreducedBets : round.bets.slice();
+  if (target >= source.length) return setStatus("El presupuesto ya cubre todo el desarrollo (" + source.length + " apuestas).", "error");
+  if (source.length > E.MAX_GENERATED) return setStatus("El desarrollo supera el límite de reducción local.", "error");
+  const probs = selectedProbabilities();
+  const rows = probs || Array.from({length:14},()=>[33.34,33.33,33.33]);
+  const unique = [...new Set(source)];
+  const ranked = unique.map((bet) => ({ bet, score: bet.slice(0,14).split("").reduce((sum,s,i)=>sum+Math.log(Math.max(rows[i][["1","X","2"].indexOf(s)]/100,1e-12)),0) })).sort((a,b)=>b.score-a.score);
+  const chosen = [ranked[0].bet], used = new Set([ranked[0].bet]);
+  while (chosen.length < target && chosen.length < ranked.length) {
+    let best = null, bestDistance = -1;
+    for (const candidate of ranked) {
+      if (used.has(candidate.bet)) continue;
+      const distance = Math.min(...chosen.map((column) => [...column.slice(0,14)].reduce((n,s,i)=>n+(s!==candidate.bet[i]),0)));
+      if (distance > bestDistance || (distance === bestDistance && best && candidate.score > best.score)) { best = candidate; bestDistance = distance; }
+    }
+    if (!best) break;
+    chosen.push(best.bet); used.add(best.bet);
+  }
+  round.unreducedBets = source.slice(); round.bets = chosen;
+  round.generatedAt = "Reducida · " + new Date().toLocaleTimeString("es-ES", {hour:"2-digit",minute:"2-digit"});
+  save(); renderAll();
+  byId("reductionInfo").textContent = "Reducida: " + chosen.length + " de " + source.length + " apuestas · " + money(chosen.length * state.settings.priceCents) + ". Selección diversificada con priorización probabilística; cobertura observada, sin garantía de acierto.";
+  setStatus("Reducida creada. El desarrollo completo queda conservado para poder rehacerla.", "success");
+}
+function restoreFullDevelopment() {
+  const round = current();
+  if (!round.unreducedBets?.length) return setStatus("No hay una copia completa pendiente de restaurar.");
+  round.bets = round.unreducedBets; delete round.unreducedBets;
+  round.generatedAt = "Desarrollo completo restaurado";
+  save(); renderAll();
+  byId("reductionInfo").textContent = "Desarrollo completo restaurado: " + round.bets.length + " apuestas.";
 }
 function saveCurrentSystem() {
   const round = current();

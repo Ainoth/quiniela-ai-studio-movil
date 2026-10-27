@@ -93,6 +93,34 @@
       .map((signIndex) => SIGNS[signIndex]).join(""));
   }
 
+  function configuredBase(probabilities, doubles, triples, maxColumns) {
+    const rows = validateProbabilities(probabilities);
+    doubles = Math.max(0, Math.min(14, Math.trunc(doubles)));
+    triples = Math.max(0, Math.min(14 - doubles, Math.trunc(triples)));
+    if (2 ** doubles * 3 ** triples > maxColumns) throw Error("La cantidad elegida supera el máximo de columnas.");
+    const ranks = rows.map((row) => [0, 1, 2].sort((a, b) => row[b] - row[a] || a - b));
+    const positions = rows.map((row, index) => ({ index, strength: Math.max(...row) }))
+      .sort((a, b) => a.strength - b.strength || a.index - b.index);
+    const widths = Array(14).fill(1);
+    positions.slice(0, triples).forEach(({ index }) => widths[index] = 3);
+    positions.slice(triples, triples + doubles).forEach(({ index }) => widths[index] = 2);
+    return ranks.map((rank, index) => rank.slice(0, widths[index]).sort((a, b) => a - b).map((n) => SIGNS[n]).join(""));
+  }
+
+  function automaticBase(probabilities, maxColumns) {
+    let best = null;
+    for (let triples = 0; triples <= 14; triples++) for (let doubles = 0; doubles + triples <= 14; doubles++) {
+      if (2 ** doubles * 3 ** triples > maxColumns) continue;
+      const base = configuredBase(probabilities, doubles, triples, maxColumns);
+      const rows = validateProbabilities(probabilities);
+      const score = base.reduce((sum, signs, i) => sum + signs.split("").reduce((n, sign) => n + rows[i][SIGNS.indexOf(sign)] / 100, 0), 0);
+      if (!best || score > best.score || (score === best.score && base.reduce((n, x) => n * x.length, 1) < best.columns))
+        best = { base, score, doubles, triples, columns: base.reduce((n, x) => n * x.length, 1) };
+    }
+    if (!best) throw Error("El máximo de columnas no permite crear una base.");
+    return best;
+  }
+
   function coverageCounts(level) {
     if (!Number.isInteger(level) || level < 0 || level > 10) throw Error("El nivel de cobertura va de 0 a 10.");
     const [triples, doubles] = COVERAGE_LEVELS[level];
@@ -291,7 +319,7 @@
 
   root.EscrutinioEngine = { roundLine, parseKickoff, formatKickoff, parseDates, parseHours, parseNames,
     normalizeTeam, sameTeamName,
-    normalizeBase, validateProbabilities, coverageBase, coverageCounts, baseSize, satisfiesFilters,
+    normalizeBase, validateProbabilities, coverageBase, configuredBase, automaticBase, coverageCounts, baseSize, satisfiesFilters,
     generateBets, probabilityMass, MAX_GENERATED,
     availableRounds, currentRound, scrutiny, live, evaluate, categoryPossibilities, awardBreakdown };
   if (typeof module !== "undefined") module.exports = root.EscrutinioEngine;

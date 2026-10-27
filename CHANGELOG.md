@@ -1,5 +1,14 @@
 # Cambios
 
+## 0.3.0 — Base de generación y reducida por presupuesto
+
+- Sustituye los niveles de cobertura fijos por asignación automática según la
+  fuente y configuración manual de dobles, triples y máximo de columnas.
+- Añade la sección Reducidas para seleccionar columnas con presupuesto,
+  priorizando probabilidad y diversidad; permite restaurar el desarrollo
+  completo. No presenta la selección como una reducción oficial garantizada.
+- Conserva el desarrollo y sistemas asociados a cada jornada.
+
 ## 0.2.4 — Escrutinio al estilo autónomo y previsión integrada
 
 - Recupera la presentación de la app Escrutinio autónomo dentro de la pestaña.

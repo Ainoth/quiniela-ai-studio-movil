@@ -38,9 +38,13 @@
             <button data-source="manual" onclick="selectSource('manual')">Manual</button>
           </div>
           <p id="sourceNote" class="help-text">Mercado estima probabilidades deportivas; Popularidad muestra signos jugados. No son equivalentes ni predicen aciertos.</p>
-          <div class="coverage-head"><strong>Cobertura rápida</strong><span id="coverageCaption">0 fijos · 0 dobles · 0 triples</span></div>
-          <div id="coverageLevels" class="level-grid" role="group" aria-label="Nivel de cobertura"></div>
-          <button id="fillBaseButton" class="secondary full" onclick="fillBase()" disabled>Rellenar la base según porcentajes</button>
+          <div class="coverage-head"><strong>Base de generación</strong><span id="coverageCaption">14 fijos · 0 dobles · 0 triples</span></div>
+          <label class="field-label" for="generationMode">Asignación de dobles y triples</label>
+          <select id="generationMode" onchange="setGenerationMode(this.value)"><option value="automatic">Automática según porcentajes</option><option value="manual">Manual</option></select>
+          <div class="count-grid generator-counts"><span>Tipo</span><span>Cantidad</span><span></span><b>Dobles</b><input id="doubleCount" type="number" min="0" max="14" value="1" onchange="setGenerationCounts()"><span></span><b>Triples</b><input id="tripleCount" type="number" min="0" max="14" value="1" onchange="setGenerationCounts()"><span></span></div>
+          <label class="field-label" for="maxColumns">Máximo de columnas de la base</label><input id="maxColumns" type="number" min="1" max="4782969" value="6" onchange="setGenerationCounts()">
+          <button id="fillBaseButton" class="secondary full" onclick="fillBase()" disabled>Rellenar base según porcentajes</button>
+          <p class="help-text">En automático se selecciona la combinación de dobles/triples de mayor probabilidad total que respeta el máximo de columnas.</p>
         </section>
 
         <section class="card fixture-card">
@@ -63,6 +67,12 @@
             <button class="outline" onclick="exportCurrentTxt()">Guardar TXT</button>
           </div>
         </section>
+      </section>
+
+      <section id="page-reducciones" class="page" aria-labelledby="title-reducciones">
+        <div class="page-heading"><div><span class="eyebrow">REDUCCIÓN DE APUESTAS</span><h1 id="title-reducciones">Reducidas</h1></div></div>
+        <p class="intro">Reduce el desarrollo generado a un presupuesto. La selección prioriza columnas probables y diversidad; no garantiza un premio ni equivale a una tabla oficial de reducción.</p>
+        <section class="card"><label class="field-label" for="reductionBudget">Presupuesto máximo (€)</label><input id="reductionBudget" type="number" min="0.01" max="100000" step="0.01" value="10"><p id="reductionInfo" class="help-text">Genera primero la quiniela base. Se conservará el desarrollo completo en la jornada hasta aplicar la reducida.</p><button class="primary full" onclick="applyReduction()">Crear reducida</button><button class="outline full" onclick="restoreFullDevelopment()">Restaurar desarrollo completo</button></section>
       </section>
 
       <section id="page-condiciones" class="page" aria-labelledby="title-condiciones">
@@ -128,6 +138,7 @@
     <nav class="bottom-nav" aria-label="Secciones principales">
       <button class="nav-button active" data-page="quiniela"><span>▦</span><small>Quiniela</small></button>
       <button class="nav-button" data-page="condiciones"><span>☷</span><small>Filtros</small></button>
+      <button class="nav-button" data-page="reducciones"><span>⇣</span><small>Reducidas</small></button>
       <button class="nav-button" data-page="analisis"><span>◔</span><small>Análisis</small></button>
       <button class="nav-button" data-page="sistemas"><span>▤</span><small>Sistemas</small></button>
       <button class="nav-button" data-page="ajustes"><span>⚙</span><small>Ajustes</small></button>

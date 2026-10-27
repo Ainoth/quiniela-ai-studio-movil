@@ -2,6 +2,8 @@
 
 | Requisito | Estado | Verificación |
 |---|---|---|
+| RF-MOV-008 · configurar generación manual/automática de fijos, dobles y triples con máximo de columnas | Implementado v0.3.0 | controles en Quiniela; el modo automático elige según porcentajes guardados y límite indicado |
+| RF-MOV-009 · reducir el desarrollo al presupuesto y restaurar el original | Implementado v0.3.0 | sección Reducidas; subconjunto priorizado por probabilidad y diversidad, sin garantía de cobertura |
 | RF-MOV-001 · elegir jornada, importar TXT y mostrar aciertos por apuesta | Implementado v0.2.2 | `tests/escrutinio.test.cjs`; selector y validación de TXT |
 | RF-MOV-002 · premios solo con PRE definitivo | Implementado v0.2.2 | `tests/escrutinio.test.cjs`; lectura PRE y desglose de premios |
 | RF-MOV-003 · guardar y restaurar la jornada/apuestas localmente | Implementado v0.2.2 | apuestas almacenadas en el estado local de Quiniela AI Studio, asociadas a temporada/jornada |
