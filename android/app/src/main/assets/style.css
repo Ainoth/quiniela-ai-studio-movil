@@ -38,4 +38,4 @@ main{width:min(720px,100%);margin:0 auto;padding:13px 11px 22px}.page{display:no
 .system-actions{display:flex;justify-content:flex-end;gap:5px;margin-top:8px}.system-actions button{flex:0 0 auto;min-height:30px;padding:4px 7px;font-size:11px}
 .pleno-actions button{min-height:32px;padding:4px 8px;font-size:11px}
 .condition-count-row{grid-template-columns:24px 22px repeat(14,minmax(0,1fr))}.condition-tile{font-size:9px}
-.condition-value-head,.condition-count-row{display:grid;grid-template-columns:24px 22px repeat(14,minmax(0,1fr));gap:2px;align-items:center}.condition-value-head{padding:0 3px;color:var(--soft);font-size:9px;font-weight:800;text-align:center}.condition-tile{min-height:0;height:18px;padding:0;border-radius:3px;font-size:0;line-height:0}
+.condition-value-head,.condition-count-row{display:grid;grid-template-columns:24px 22px repeat(14,minmax(0,1fr));gap:2px;align-items:center}.condition-value-head{padding:0 3px;color:var(--soft);font-size:9px;font-weight:800;text-align:center}.condition-tile{min-height:0;height:20px;padding:0;border-radius:3px;font-size:0;line-height:0}

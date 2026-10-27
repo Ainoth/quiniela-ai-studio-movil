@@ -28,7 +28,7 @@ function newRoundState() {
     reductionTable: 1, reductionPositions: null,
     locks: Array(14).fill(false),
     filters: { accountEnabled: false, minCounts: { "1": 0, X: 0, "2": 0, V: 0 },
-      maxCounts: { "1": 14, X: 14, "2": 14, V: 14 }, allowedCounts: Object.fromEntries(["1","X","2","V"].map(s=>[s,Array(15).fill(true)])), streakEnabled: false, maxVariantRun: 14, allowedVariantRuns: Array(15).fill(true) },
+      maxCounts: { "1": 14, X: 14, "2": 14, V: 14 }, allowedCounts: Object.fromEntries(["1","X","2","V"].map(s=>[s,Array(15).fill(true)])), streakEnabled: false, maxVariantRun: 14, allowedVariantRuns: Array(15).fill(true), autoFromHistory: false },
     bets: [], generatedAt: "", selectedSource: "market",
   };
 }
@@ -49,6 +49,7 @@ function current() {
   if(!Number.isInteger(round.strategyLevel))round.strategyLevel=Math.max(round.differentiation,round.surpriseLevel);
   if (!Number.isInteger(round.surpriseLevel)) round.surpriseLevel=Number.isInteger(round.strategyLevel)?round.strategyLevel:0;
   if(!round.filters)round.filters=newRoundState().filters;
+  if(typeof round.filters.autoFromHistory!=="boolean")round.filters.autoFromHistory=false;
   for(const sign of ["1","X","2","V"])if(!Array.isArray(round.filters.allowedCounts?.[sign]))round.filters.allowedCounts={...(round.filters.allowedCounts||{}),[sign]:Array.from({length:15},(_,n)=>n>=Number(round.filters.minCounts?.[sign]??0)&&n<=Number(round.filters.maxCounts?.[sign]??14))};
   if(!Array.isArray(round.filters.allowedVariantRuns))round.filters.allowedVariantRuns=Array.from({length:15},(_,n)=>n<=Number(round.filters.maxVariantRun??14));
   return round;
@@ -249,9 +250,21 @@ function renderHistoryControls(){
   byId("historySeasons").innerHTML=seasons.map(season=>'<label class="history-season"><input type="checkbox" '+(selected.has(season)?"checked":"")+' onchange="setHistorySeason(\''+season+'\',this.checked)"><span>'+escapeHtml(season)+" · "+(HISTORY.results[season]?.length||0)+" jornadas</span></label>").join("");
   const rows=selectedHistoryRows();byId("historySummary").textContent="Temporadas históricas · "+(selected.size?selected.size+" seleccionadas":"ninguna seleccionada");byId("historyDescription").textContent=(selected.size?selected.size+" temporadas · "+rows.length.toLocaleString("es-ES")+" jornadas. ":"Selecciona temporadas para el modo automático. ")+"Cobertura descriptiva de la muestra; no es una predicción.";
 }
-function setHistorySeason(season,checked){const selected=new Set(current().historySeasons||[]);checked?selected.add(season):selected.delete(season);current().historySeasons=HISTORY.seasons.filter(x=>selected.has(x));save();renderAll();}
-function selectAllHistory(checked){current().historySeasons=checked?HISTORY.seasons.slice():[];save();renderAll();}
-function setHistoricalTarget(value){current().generation.historicalTarget=Number(value)/100;save();renderCoverageLevels();}
+function setHistorySeason(season,checked){const selected=new Set(current().historySeasons||[]);checked?selected.add(season):selected.delete(season);current().historySeasons=HISTORY.seasons.filter(x=>selected.has(x));if(current().filters.autoFromHistory)recomputeHistoricalConditions();save();renderAll();}
+function selectAllHistory(checked){current().historySeasons=checked?HISTORY.seasons.slice():[];if(current().filters.autoFromHistory)recomputeHistoricalConditions();save();renderAll();}
+function setHistoricalTarget(value){current().generation.historicalTarget=Number(value)/100;if(current().filters.autoFromHistory)recomputeHistoricalConditions();save();renderCoverageLevels();}
+function recomputeHistoricalConditions(){
+  const filters=current().filters,rows=selectedHistoryRows();
+  if(!rows.length){filters.accountEnabled=false;filters.streakEnabled=false;filters.autoHistoryNote="Selecciona temporadas históricas en Quiniela para calcular estas opciones.";return false;}
+  try{
+    const result=E.historicalConditionFilters(rows,current().generation.historicalTarget);
+    filters.allowedCounts=result.allowedCounts;filters.allowedVariantRuns=result.allowedVariantRuns;
+    filters.accountEnabled=true;filters.streakEnabled=true;
+    filters.autoHistoryNote="Rangos calculados con "+rows.length.toLocaleString("es-ES")+" jornadas. Cada regla cubre al menos el "+Math.round(current().generation.historicalTarget*100)+"% de la muestra seleccionada.";
+    return true;
+  }catch(error){filters.autoHistoryNote=error.message;return false;}
+}
+function toggleAutoConditions(enabled){const filters=current().filters;filters.autoFromHistory=!!enabled;if(enabled)recomputeHistoricalConditions();save();renderFilters();}
 function setSurpriseLevel(value){current().surpriseLevel=Math.max(0,Math.min(10,Number(value)||0));save();renderCoverageLevels();renderFixtures();}
 function baseSize() {
   return E.baseSize(current().base, current().goals);
@@ -345,14 +358,15 @@ function setTab(section) {
 document.querySelectorAll(".nav-button").forEach((button) => button.addEventListener("click", () => setTab(button.dataset.page)));
 function renderFilters() {
   const filters=current().filters;byId("accountEnabled").checked=filters.accountEnabled;byId("streakEnabled").checked=filters.streakEnabled;
+  byId("autoConditionsEnabled").checked=filters.autoFromHistory;
   const signs=[["1","1","sign-1"],["X","X","sign-x"],["2","2","sign-2"],["V","V","sign-v"]];
   const tile=(allowed,label,kind,key,value)=>`<button class="condition-tile ${allowed?"on":"off"}" aria-label="${label}" title="${label}" aria-pressed="${allowed}" onclick="toggleConditionValue('${kind}','${key}',${value})"></button>`;
   const heading='<div class="condition-value-head"><span></span>'+Array.from({length:15},(_,n)=>'<span>'+n+'</span>').join("")+'</div>';
   byId("conditionCounts").innerHTML=heading+signs.map(([key,label,cls])=>`<div class="condition-count-row"><b class="condition-sign ${cls}">${label}</b>${Array.from({length:15},(_,n)=>tile(filters.allowedCounts[key][n],label+": "+n+" signos","count",key,n)).join("")}</div>`).join("");
   byId("variantRunChoices").innerHTML=heading+`<div class="condition-count-row"><b class="condition-sign sign-v">R</b>${Array.from({length:15},(_,n)=>tile(filters.allowedVariantRuns[n],"Racha de variantes: "+n,"run","",n)).join("")}</div>`;
-  const active=filters.accountEnabled||filters.streakEnabled;byId("filterStatus").textContent=active?"Condiciones activas al generar":"Filtros desactivados";byId("filterEffect").textContent=active?"El filtro puede reducir el número de apuestas generado.":"Los valores se conservan. Activa una condición para aplicarla.";
+  const active=filters.accountEnabled||filters.streakEnabled;byId("filterStatus").textContent=active?"Condiciones activas al generar":"Filtros desactivados";byId("filterEffect").textContent=filters.autoFromHistory?(filters.autoHistoryNote||"Ajuste automático al histórico activado."):active?"El filtro puede reducir el número de apuestas generado.":"Los valores se conservan. Activa una condición para aplicarla.";
 }
-function toggleConditionValue(kind,key,value){const f=current().filters;if(kind==="count")f.allowedCounts[key][value]=!f.allowedCounts[key][value];else f.allowedVariantRuns[value]=!f.allowedVariantRuns[value];save();renderFilters();}
+function toggleConditionValue(kind,key,value){const f=current().filters;f.autoFromHistory=false;if(kind==="count")f.allowedCounts[key][value]=!f.allowedCounts[key][value];else f.allowedVariantRuns[value]=!f.allowedVariantRuns[value];save();renderFilters();}
 function updateFilters(){const f=current().filters;f.accountEnabled=byId("accountEnabled").checked;f.streakEnabled=byId("streakEnabled").checked;save();renderFilters();}
 
 function renderAnalysis() {

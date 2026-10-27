@@ -1,5 +1,13 @@
 # Cambios
 
+## 0.5.5 — ajuste automático de Condiciones por histórico
+
+- Añade un modo automático que selecciona cantidades de signos y longitudes de racha a partir de las temporadas históricas marcadas.
+- Usa el objetivo de cobertura histórica ya configurado y recalcula las condiciones cuando cambian las temporadas o ese objetivo. Editar una casilla cambia a modo manual.
+- Hace las casillas ligeramente más altas, de 18 a 20 px, manteniendo su ancho.
+- Verificado con 27 pruebas y compilación Android.
+
+
 ## 0.5.4 — altura cuadrada de las casillas
 
 - Anula la altura mínima general de los botones en las casillas de Condiciones y fija su altura en 18 px para mantenerla acorde con el ancho existente.

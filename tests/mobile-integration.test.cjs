@@ -60,13 +60,16 @@ test("el Pleno tiene selección automática de mercado o frecuencias históricas
   assert.match(history, /"pleno"/);
 });
 
-test("Condiciones muestra filas visuales y botones compactos mantienen tamaño de texto legible", () => {
+test("Condiciones ofrece reglas visuales y ajuste automático por temporadas", () => {
   assert.match(html, /id="conditionCounts"/);
   assert.match(html, /id="variantRunChoices"/);
+  assert.match(html, /id="autoConditionsEnabled"/);
   assert.match(app, /function toggleConditionValue/);
+  assert.match(app, /function recomputeHistoricalConditions/);
+  assert.match(app, /E\.historicalConditionFilters\(rows,current\(\)\.generation\.historicalTarget\)/);
   assert.match(app, /class="condition-value-head"/);
   assert.match(app, /title="\$\{label\}"[^>]*aria-pressed="\$\{allowed\}"[^>]*onclick=/);
-  assert.match(style, /\.condition-tile\{min-height:0;height:18px[^}]*font-size:0/);
+  assert.match(style, /\.condition-tile\{min-height:0;height:20px[^}]*font-size:0/);
   assert.match(style, /\.scrutiny-actions button[^}]*font-size:11px/);
   assert.match(style, /\.system-actions button[^}]*font-size:11px/);
 });

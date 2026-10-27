@@ -9,6 +9,8 @@
 | RF-MOV-020 · ajustar tamaño y distribución de botones en Sistemas y Escrutinio | Implementado v0.5.2 | botones de sistema alineados a la derecha; controles de Escrutinio a ancho completo |
 | RF-MOV-021 · mostrar etiquetas de valores encima de las casillas de Condiciones | Implementado v0.5.3 | cabeceras numeradas, casillas vacías y menor altura |
 | RF-MOV-022 · mantener las casillas de Condiciones cuadradas y compactas | Implementado v0.5.4 | min-height global anulada; altura de 18 px y ancho sin cambios |
+| RF-MOV-023 · calcular cantidades y rachas permitidas desde temporadas históricas | Implementado v0.5.5 | selección por frecuencias históricas con objetivo de cobertura configurable y actualización automática al cambiar muestra o cobertura |
+| RF-MOV-024 · aumentar levemente la altura de las casillas de Condiciones | Implementado v0.5.5 | altura de 20 px, ancho conservado |
 | RF-MOV-014 · completar automáticamente las selecciones del Pleno | Implementado v0.5.1 | marginales del mercado y respaldo por frecuencias históricas por temporadas; selección manual disponible |
 | RF-MOV-015 · facilitar lectura visual de Condiciones y controles | Implementado v0.5.1 | filas coloreadas por signo y botones más compactos sin reducir su texto |
 | RF-MOV-012 · simplificar navegación y unificar estrategia de sorpresa/público | Implementado v0.5.0 | selector único, reducciones plegables en Quiniela, Ajustes al final |

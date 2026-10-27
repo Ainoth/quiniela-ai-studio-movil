@@ -137,3 +137,16 @@ test("condition filters accept independent exact sign counts and run lengths", (
   filters.allowedVariantRuns[13]=true;filters.allowedCounts["1"][1]=true;
   assert.equal(E.satisfiesFilters("1XXXXXXXXXXXXX",filters),true);
 });
+
+test("historical conditions select count and run values covering the requested sample share", () => {
+  const rows=["11111111111111","1111111111111X","111111111111XX","X2222222222222"];
+  const result=E.historicalConditionFilters(rows,0.75);
+  assert.equal(result.sample,4);
+  for(const sign of ["1","X","2","V"]) {
+    assert.equal(result.allowedCounts[sign].length,15);
+    assert.ok(result.coverage[sign]>=0.75);
+  }
+  assert.equal(result.allowedVariantRuns.length,15);
+  assert.ok(result.coverage.runs>=0.75);
+  assert.throws(()=>E.historicalConditionFilters([],0.7),/Selecciona temporadas/);
+});

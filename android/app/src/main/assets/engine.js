@@ -326,6 +326,24 @@
     return normalized.reduce((size, row) => size * row.length, goalMasks[0].length * goalMasks[1].length);
   }
 
+  function historicalConditionFilters(results, target=0.7) {
+    if(!Array.isArray(results)||!results.length)throw Error("Selecciona temporadas con resultados históricos.");
+    if(!Number.isFinite(target)||target<0.1||target>1)throw Error("La cobertura histórica debe estar entre 10% y 100%.");
+    const metrics={"1":Array(15).fill(0),X:Array(15).fill(0),"2":Array(15).fill(0),V:Array(15).fill(0),runs:Array(15).fill(0)};
+    for(const result of results){
+      const column=typeof result==="string"?result:result?.results;
+      if(typeof column!=="string"||column.length<14||[...column.slice(0,14)].some(sign=>!SIGNS.includes(sign)))continue;
+      const signs=column.slice(0,14),counts={"1":0,X:0,"2":0,V:0};let run=0,longest=0;
+      for(const sign of signs){counts[sign]++;if(sign==="1")run=0;else{counts.V++;run++;longest=Math.max(longest,run);}}
+      for(const sign of ["1","X","2","V"])metrics[sign][counts[sign]]++;metrics.runs[longest]++;
+    }
+    const sample=metrics["1"].reduce((sum,count)=>sum+count,0);if(!sample)throw Error("No hay resultados históricos válidos para estas temporadas.");
+    const select=(histogram)=>{const allowed=Array(15).fill(false);let covered=0;const order=histogram.map((count,value)=>({count,value})).filter(x=>x.count>0).sort((a,b)=>b.count-a.count||a.value-b.value);for(const item of order){allowed[item.value]=true;covered+=item.count;if(covered/sample>=target)break;}return {allowed,coverage:covered/sample};};
+    const counts={};for(const sign of ["1","X","2","V"])counts[sign]=select(metrics[sign]);
+    const runs=select(metrics.runs);
+    return {allowedCounts:Object.fromEntries(Object.entries(counts).map(([sign,value])=>[sign,value.allowed])),allowedVariantRuns:runs.allowed,coverage:Object.fromEntries(Object.entries(counts).map(([sign,value])=>[sign,value.coverage]).concat([["runs",runs.coverage]])),sample};
+  }
+
   function satisfiesFilters(column, filters = {}) {
     if (filters.accountEnabled) {
       const counts = {
@@ -517,7 +535,7 @@
   root.EscrutinioEngine = { roundLine, parseKickoff, formatKickoff, parseDates, parseHours, parseNames,
     normalizeTeam, sameTeamName,
     normalizeBase, validateProbabilities, automaticPleno, parseProbabilitySource, coverageBase, configuredBase, automaticBase, historicalBase, applySurprise, weightedProbabilities, differentiateProbabilities, surpriseOrder, surpriseEligiblePositions, reducedTemplate, reduceByTable, coverageCounts, baseSize, satisfiesFilters,
-    generateBets, probabilityMass, MAX_GENERATED,
+    generateBets, probabilityMass, historicalConditionFilters, MAX_GENERATED,
     availableRounds, currentRound, scrutiny, live, evaluate, categoryPossibilities, awardBreakdown };
   if (typeof module !== "undefined") module.exports = root.EscrutinioEngine;
 })(typeof globalThis !== "undefined" ? globalThis : this);
