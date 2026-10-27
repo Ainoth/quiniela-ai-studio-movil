@@ -1,5 +1,11 @@
 # Cambios
 
+## 0.5.4 — altura cuadrada de las casillas
+
+- Anula la altura mínima general de los botones en las casillas de Condiciones y fija su altura en 18 px para mantenerla acorde con el ancho existente.
+- Verificado con pruebas automatizadas y compilación Android.
+
+
 ## 0.5.3 — cabeceras para las casillas de Condiciones
 
 - Mueve los valores de cada grupo a una cabecera de columna y deja las casillas sin texto interior.

@@ -66,7 +66,7 @@ test("Condiciones muestra filas visuales y botones compactos mantienen tamaño d
   assert.match(app, /function toggleConditionValue/);
   assert.match(app, /class="condition-value-head"/);
   assert.match(app, /title="\$\{label\}"[^>]*aria-pressed="\$\{allowed\}"[^>]*onclick=/);
-  assert.match(style, /\.condition-tile\{height:18px[^}]*font-size:0/);
+  assert.match(style, /\.condition-tile\{min-height:0;height:18px[^}]*font-size:0/);
   assert.match(style, /\.scrutiny-actions button[^}]*font-size:11px/);
   assert.match(style, /\.system-actions button[^}]*font-size:11px/);
 });
