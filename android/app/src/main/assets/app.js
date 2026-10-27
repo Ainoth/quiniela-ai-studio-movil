@@ -242,7 +242,7 @@ function countPairs() {
 function technicalColumnLimit(){return Math.max(1,Math.floor(E.MAX_GENERATED/Math.max(1,countPairs())));}
 function selectedHistoryRows(){const selected=new Set(current().historySeasons||[]);return (HISTORY.seasons||[]).filter(season=>selected.has(season)).flatMap(season=>HISTORY.results[season]||[]);}
 function historyProbabilities(results=selectedHistoryRows()){if(!results.length)return null;return Array.from({length:14},(_,i)=>["1","X","2"].map(sign=>results.filter(row=>row[i]===sign).length/results.length));}
-function surpriseProbabilityRows(){try{return effectiveProbabilities()||historyProbabilities();}catch(_){return selectedProbabilities()||historyProbabilities();}}
+function surpriseProbabilityRows(){try{return state.percentages[roundKey()]?.market||effectiveProbabilities()||historyProbabilities();}catch(_){return state.percentages[roundKey()]?.market||selectedProbabilities()||historyProbabilities();}}
 function renderHistoryControls(){
   const round=current(),selected=new Set(round.historySeasons||[]),seasons=(HISTORY.seasons||[]).slice().reverse();
   byId("historySeasons").innerHTML=seasons.map(season=>'<label class="history-season"><input type="checkbox" '+(selected.has(season)?"checked":"")+' onchange="setHistorySeason(\''+season+'\',this.checked)"><span>'+escapeHtml(season)+" · "+(HISTORY.results[season]?.length||0)+" jornadas</span></label>").join("");
