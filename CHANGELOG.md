@@ -1,5 +1,12 @@
 # Cambios
 
+## 0.5.6 — niveles de riesgo para Condiciones automáticas
+
+- Añade cinco niveles de riesgo. Cada nivel determina la cobertura de frecuencias históricas que se incluye al calcular cantidades y rachas; los niveles altos admiten valores menos frecuentes.
+- El cambio de nivel actualiza las casillas automáticamente cuando está activo el modo histórico.
+- Verificado con pruebas automatizadas y compilación Android.
+
+
 ## 0.5.5 — ajuste automático de Condiciones por histórico
 
 - Añade un modo automático que selecciona cantidades de signos y longitudes de racha a partir de las temporadas históricas marcadas.

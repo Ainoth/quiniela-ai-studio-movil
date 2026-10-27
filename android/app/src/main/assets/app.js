@@ -28,7 +28,7 @@ function newRoundState() {
     reductionTable: 1, reductionPositions: null,
     locks: Array(14).fill(false),
     filters: { accountEnabled: false, minCounts: { "1": 0, X: 0, "2": 0, V: 0 },
-      maxCounts: { "1": 14, X: 14, "2": 14, V: 14 }, allowedCounts: Object.fromEntries(["1","X","2","V"].map(s=>[s,Array(15).fill(true)])), streakEnabled: false, maxVariantRun: 14, allowedVariantRuns: Array(15).fill(true), autoFromHistory: false },
+      maxCounts: { "1": 14, X: 14, "2": 14, V: 14 }, allowedCounts: Object.fromEntries(["1","X","2","V"].map(s=>[s,Array(15).fill(true)])), streakEnabled: false, maxVariantRun: 14, allowedVariantRuns: Array(15).fill(true), autoFromHistory: false, riskLevel: "medio" },
     bets: [], generatedAt: "", selectedSource: "market",
   };
 }
@@ -50,6 +50,7 @@ function current() {
   if (!Number.isInteger(round.surpriseLevel)) round.surpriseLevel=Number.isInteger(round.strategyLevel)?round.strategyLevel:0;
   if(!round.filters)round.filters=newRoundState().filters;
   if(typeof round.filters.autoFromHistory!=="boolean")round.filters.autoFromHistory=false;
+  if(!["minimo","bajo","medio","alto","muy-alto"].includes(round.filters.riskLevel))round.filters.riskLevel="medio";
   for(const sign of ["1","X","2","V"])if(!Array.isArray(round.filters.allowedCounts?.[sign]))round.filters.allowedCounts={...(round.filters.allowedCounts||{}),[sign]:Array.from({length:15},(_,n)=>n>=Number(round.filters.minCounts?.[sign]??0)&&n<=Number(round.filters.maxCounts?.[sign]??14))};
   if(!Array.isArray(round.filters.allowedVariantRuns))round.filters.allowedVariantRuns=Array.from({length:15},(_,n)=>n<=Number(round.filters.maxVariantRun??14));
   return round;
@@ -252,19 +253,20 @@ function renderHistoryControls(){
 }
 function setHistorySeason(season,checked){const selected=new Set(current().historySeasons||[]);checked?selected.add(season):selected.delete(season);current().historySeasons=HISTORY.seasons.filter(x=>selected.has(x));if(current().filters.autoFromHistory)recomputeHistoricalConditions();save();renderAll();}
 function selectAllHistory(checked){current().historySeasons=checked?HISTORY.seasons.slice():[];if(current().filters.autoFromHistory)recomputeHistoricalConditions();save();renderAll();}
-function setHistoricalTarget(value){current().generation.historicalTarget=Number(value)/100;if(current().filters.autoFromHistory)recomputeHistoricalConditions();save();renderCoverageLevels();}
+function setHistoricalTarget(value){current().generation.historicalTarget=Number(value)/100;save();renderCoverageLevels();}
 function recomputeHistoricalConditions(){
   const filters=current().filters,rows=selectedHistoryRows();
   if(!rows.length){filters.accountEnabled=false;filters.streakEnabled=false;filters.autoHistoryNote="Selecciona temporadas históricas en Quiniela para calcular estas opciones.";return false;}
   try{
-    const result=E.historicalConditionFilters(rows,current().generation.historicalTarget);
+    const coverage=E.conditionRiskCoverage(filters.riskLevel),result=E.historicalConditionFilters(rows,coverage);
     filters.allowedCounts=result.allowedCounts;filters.allowedVariantRuns=result.allowedVariantRuns;
     filters.accountEnabled=true;filters.streakEnabled=true;
-    filters.autoHistoryNote="Rangos calculados con "+rows.length.toLocaleString("es-ES")+" jornadas. Cada regla cubre al menos el "+Math.round(current().generation.historicalTarget*100)+"% de la muestra seleccionada.";
+    filters.autoHistoryNote="Riesgo "+filters.riskLevel.replace("-"," ")+": reglas ajustadas a "+Math.round(coverage*100)+"% de cobertura histórica, con "+rows.length.toLocaleString("es-ES")+" jornadas. Más riesgo admite valores menos frecuentes y puede generar más apuestas.";
     return true;
   }catch(error){filters.autoHistoryNote=error.message;return false;}
 }
 function toggleAutoConditions(enabled){const filters=current().filters;filters.autoFromHistory=!!enabled;if(enabled)recomputeHistoricalConditions();save();renderFilters();}
+function setConditionRisk(level){const filters=current().filters;filters.riskLevel=level;if(filters.autoFromHistory)recomputeHistoricalConditions();save();renderFilters();}
 function setSurpriseLevel(value){current().surpriseLevel=Math.max(0,Math.min(10,Number(value)||0));save();renderCoverageLevels();renderFixtures();}
 function baseSize() {
   return E.baseSize(current().base, current().goals);
@@ -359,6 +361,7 @@ document.querySelectorAll(".nav-button").forEach((button) => button.addEventList
 function renderFilters() {
   const filters=current().filters;byId("accountEnabled").checked=filters.accountEnabled;byId("streakEnabled").checked=filters.streakEnabled;
   byId("autoConditionsEnabled").checked=filters.autoFromHistory;
+  byId("conditionRiskLevel").value=filters.riskLevel;
   const signs=[["1","1","sign-1"],["X","X","sign-x"],["2","2","sign-2"],["V","V","sign-v"]];
   const tile=(allowed,label,kind,key,value)=>`<button class="condition-tile ${allowed?"on":"off"}" aria-label="${label}" title="${label}" aria-pressed="${allowed}" onclick="toggleConditionValue('${kind}','${key}',${value})"></button>`;
   const heading='<div class="condition-value-head"><span></span>'+Array.from({length:15},(_,n)=>'<span>'+n+'</span>').join("")+'</div>';

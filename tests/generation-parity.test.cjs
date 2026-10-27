@@ -150,3 +150,10 @@ test("historical conditions select count and run values covering the requested s
   assert.ok(result.coverage.runs>=0.75);
   assert.throws(()=>E.historicalConditionFilters([],0.7),/Selecciona temporadas/);
 });
+
+test("condition risk levels progressively admit a wider share of historical values", () => {
+  const coverage=["minimo","bajo","medio","alto","muy-alto"].map(E.conditionRiskCoverage);
+  assert.deepEqual(coverage,[0.5,0.65,0.8,0.9,0.97]);
+  assert.ok(coverage.every((value,index)=>index===0||value>coverage[index-1]));
+  assert.throws(()=>E.conditionRiskCoverage("extremo"),/nivel de riesgo/);
+});

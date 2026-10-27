@@ -326,6 +326,12 @@
     return normalized.reduce((size, row) => size * row.length, goalMasks[0].length * goalMasks[1].length);
   }
 
+  function conditionRiskCoverage(level="medio") {
+    const levels={"minimo":0.5,"bajo":0.65,"medio":0.8,"alto":0.9,"muy-alto":0.97};
+    if(!Object.hasOwn(levels,level))throw Error("Elige un nivel de riesgo válido.");
+    return levels[level];
+  }
+
   function historicalConditionFilters(results, target=0.7) {
     if(!Array.isArray(results)||!results.length)throw Error("Selecciona temporadas con resultados históricos.");
     if(!Number.isFinite(target)||target<0.1||target>1)throw Error("La cobertura histórica debe estar entre 10% y 100%.");
@@ -535,7 +541,7 @@
   root.EscrutinioEngine = { roundLine, parseKickoff, formatKickoff, parseDates, parseHours, parseNames,
     normalizeTeam, sameTeamName,
     normalizeBase, validateProbabilities, automaticPleno, parseProbabilitySource, coverageBase, configuredBase, automaticBase, historicalBase, applySurprise, weightedProbabilities, differentiateProbabilities, surpriseOrder, surpriseEligiblePositions, reducedTemplate, reduceByTable, coverageCounts, baseSize, satisfiesFilters,
-    generateBets, probabilityMass, historicalConditionFilters, MAX_GENERATED,
+    generateBets, probabilityMass, historicalConditionFilters, conditionRiskCoverage, MAX_GENERATED,
     availableRounds, currentRound, scrutiny, live, evaluate, categoryPossibilities, awardBreakdown };
   if (typeof module !== "undefined") module.exports = root.EscrutinioEngine;
 })(typeof globalThis !== "undefined" ? globalThis : this);

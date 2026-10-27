@@ -64,9 +64,11 @@ test("Condiciones ofrece reglas visuales y ajuste automático por temporadas", (
   assert.match(html, /id="conditionCounts"/);
   assert.match(html, /id="variantRunChoices"/);
   assert.match(html, /id="autoConditionsEnabled"/);
+  assert.match(html, /id="conditionRiskLevel"[\s\S]*?value="muy-alto">Riesgo muy alto/);
   assert.match(app, /function toggleConditionValue/);
   assert.match(app, /function recomputeHistoricalConditions/);
-  assert.match(app, /E\.historicalConditionFilters\(rows,current\(\)\.generation\.historicalTarget\)/);
+  assert.match(app, /E\.conditionRiskCoverage\(filters\.riskLevel\)/);
+  assert.match(app, /E\.historicalConditionFilters\(rows,coverage\)/);
   assert.match(app, /class="condition-value-head"/);
   assert.match(app, /title="\$\{label\}"[^>]*aria-pressed="\$\{allowed\}"[^>]*onclick=/);
   assert.match(style, /\.condition-tile\{min-height:0;height:20px[^}]*font-size:0/);
