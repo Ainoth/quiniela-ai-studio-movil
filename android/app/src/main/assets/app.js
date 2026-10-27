@@ -3,7 +3,7 @@ const E = EscrutinioEngine;
 const HISTORY = window.QuinielaHistory || { seasons: [], results: {} };
 const STORAGE_KEY = "quinielaAiStudioMovilV1";
 const PERCENTAGES_URL = "https://www.quinielista.es/xml2/porcentajes_completo.asp?jornada=";
-const SECTIONS = ["quiniela", "condiciones", "reducciones", "analisis", "sistemas", "ajustes", "escrutinio"];
+const SECTIONS = ["quiniela", "condiciones", "analisis", "sistemas", "escrutinio", "ajustes"];
 let state = {
   data: null, season: "", round: 0, currentRound: 0, updatedAt: "", source: "market",
   percentages: {}, rounds: {}, systems: [], settings: { priceCents: 75 },
@@ -23,8 +23,7 @@ function newRoundState() {
     base: Array(14).fill("1"), goals: ["0", "0"], coverageLevel: 0,
     generation: { mode: "automatic", doubles: 1, triples: 1, historicalTarget: 0.7 },
     historySeasons: HISTORY.seasons.slice(),
-    differentiation: 0,
-    surpriseLevel: 0,
+    strategyLevel: 0, differentiation: 0, surpriseLevel: 0,
     manualMatrix: null, savedMatrix: null, auxiliaryWeights: { classification: 0, form5: 0, history: 0 },
     reductionTable: 1, reductionPositions: null,
     locks: Array(14).fill(false),
@@ -46,6 +45,8 @@ function current() {
   if(!Number.isInteger(round.reductionTable))round.reductionTable=1;
   if(!Number.isInteger(round.differentiation))round.differentiation=0;
   if(!Number.isInteger(round.surpriseLevel))round.surpriseLevel=0;
+  if(!Number.isInteger(round.strategyLevel))round.strategyLevel=Math.max(round.differentiation,round.surpriseLevel);
+  round.differentiation=round.strategyLevel;round.surpriseLevel=round.strategyLevel;
   return round;
 }
 function save() {
@@ -162,10 +163,10 @@ function selectedProbabilities() {
   return state.percentages[roundKey()]?.[source] || null;
 }
 function effectiveProbabilities(){
-  const level=current().differentiation||0;
+  const level=current().strategyLevel||0;
   if(!level)return selectedProbabilities();
   const data=state.percentages[roundKey()]||{};
-  if(!data.market||!data.public)throw Error("La diferenciación requiere datos de Mercado y Popularidad descargados para esta jornada.");
+  if(!data.market||!data.public)return selectedProbabilities();
   return E.differentiateProbabilities(data.market,data.public,level);
 }
 function renderMatrixEditor() {
@@ -220,19 +221,18 @@ function renderCoverageLevels() {
   byId("tripleCount").value = generation.triples;
   byId("doubleCount").disabled = generation.mode !== "manual";
   byId("tripleCount").disabled = generation.mode !== "manual";
+  byId("generationModeHint").textContent=generation.mode==="manual"?"Modo manual: indica cuántos dobles y triples quieres.":"Modo automático: el programa calcula los dobles y triples según las temporadas seleccionadas.";
   let counts = { fixed: 14 - generation.doubles - generation.triples, doubles: generation.doubles, triples: generation.triples };
   const history=selectedHistoryRows();let probabilities=null,summary="";
   try{probabilities=effectiveProbabilities()||historyProbabilities(history);}catch(_){summary=" · faltan Mercado y Popularidad";}
   byId("historicalTarget").value=Math.round(generation.historicalTarget*100);
   byId("historicalTargetValue").textContent=Math.round(generation.historicalTarget*100)+"%";
-  byId("differenceLevel").value=round.differentiation;
-  byId("differenceLevelValue").textContent=round.differentiation+"/10";
-  byId("differenceLevel").disabled=!(state.percentages[roundKey()]?.market&&state.percentages[roundKey()]?.public);
-  byId("surpriseLevel").value=round.surpriseLevel;
-  byId("surpriseLevelValue").textContent=round.surpriseLevel+"/10 · "+Math.min(14,4+round.surpriseLevel)+" partidos";
+  byId("strategyLevel").value=round.strategyLevel;
+  byId("strategyLevelValue").textContent=round.strategyLevel+"/10 · "+Math.min(14,4+round.strategyLevel)+" partidos";
   if(generation.mode==="automatic"&&probabilities&&history.length){
-    try{const eligible=E.surpriseEligiblePositions(surpriseProbabilityRows()||probabilities,round.surpriseLevel);const choice=E.historicalBase(probabilities,history,generation.historicalTarget,technicalColumnLimit(),round.locks,round.base,eligible);counts={fixed:choice.fixed,doubles:choice.doubles,triples:choice.triples};summary=" · "+choice.columns.toLocaleString("es-ES")+" col. · "+Math.round(choice.historicalCoverage*100)+"% hist.";}catch(_){summary=" · revisa el histórico";}
+    try{const eligible=E.surpriseEligiblePositions(surpriseProbabilityRows()||probabilities,round.surpriseLevel);const choice=E.historicalBase(probabilities,history,generation.historicalTarget,technicalColumnLimit(),round.locks,round.base,eligible);counts={fixed:choice.fixed,doubles:choice.doubles,triples:choice.triples};generation.doubles=choice.doubles;generation.triples=choice.triples;summary=" · "+choice.columns.toLocaleString("es-ES")+" col. · "+Math.round(choice.historicalCoverage*100)+"% hist.";}catch(_){summary=" · revisa el histórico";}
   }
+  if(generation.mode==="automatic"){byId("doubleCount").value=counts.doubles;byId("tripleCount").value=counts.triples;}
   byId("coverageCaption").textContent = counts.fixed + " fijos · " + counts.doubles + " dobles · " + counts.triples + " triples"+summary;
   byId("fillBaseButton").disabled = !isEditable() || (generation.mode==="automatic"?!history.length:!selectedProbabilities());
 }
@@ -242,17 +242,16 @@ function countPairs() {
 function technicalColumnLimit(){return Math.max(1,Math.floor(E.MAX_GENERATED/Math.max(1,countPairs())));}
 function selectedHistoryRows(){const selected=new Set(current().historySeasons||[]);return (HISTORY.seasons||[]).filter(season=>selected.has(season)).flatMap(season=>HISTORY.results[season]||[]);}
 function historyProbabilities(results=selectedHistoryRows()){if(!results.length)return null;return Array.from({length:14},(_,i)=>["1","X","2"].map(sign=>results.filter(row=>row[i]===sign).length/results.length));}
-function surpriseProbabilityRows(){try{return state.percentages[roundKey()]?.market||effectiveProbabilities()||historyProbabilities();}catch(_){return state.percentages[roundKey()]?.market||selectedProbabilities()||historyProbabilities();}}
+function surpriseProbabilityRows(){const data=state.percentages[roundKey()]||{};try{if(data.market)return effectiveProbabilities()||data.market;if(current().selectedSource==="public")return historyProbabilities();return effectiveProbabilities()||historyProbabilities();}catch(_){return data.market||historyProbabilities();}}
 function renderHistoryControls(){
   const round=current(),selected=new Set(round.historySeasons||[]),seasons=(HISTORY.seasons||[]).slice().reverse();
   byId("historySeasons").innerHTML=seasons.map(season=>'<label class="history-season"><input type="checkbox" '+(selected.has(season)?"checked":"")+' onchange="setHistorySeason(\''+season+'\',this.checked)"><span>'+escapeHtml(season)+" · "+(HISTORY.results[season]?.length||0)+" jornadas</span></label>").join("");
-  const rows=selectedHistoryRows();byId("historySummary").textContent=(selected.size?selected.size+" temporadas · "+rows.length.toLocaleString("es-ES")+" jornadas":"Sin temporadas seleccionadas")+". Cobertura descriptiva de la muestra; no es una predicción.";
+  const rows=selectedHistoryRows();byId("historySummary").textContent="Temporadas históricas · "+(selected.size?selected.size+" seleccionadas":"ninguna seleccionada");byId("historyDescription").textContent=(selected.size?selected.size+" temporadas · "+rows.length.toLocaleString("es-ES")+" jornadas. ":"Selecciona temporadas para el modo automático. ")+"Cobertura descriptiva de la muestra; no es una predicción.";
 }
 function setHistorySeason(season,checked){const selected=new Set(current().historySeasons||[]);checked?selected.add(season):selected.delete(season);current().historySeasons=HISTORY.seasons.filter(x=>selected.has(x));save();renderAll();}
 function selectAllHistory(checked){current().historySeasons=checked?HISTORY.seasons.slice():[];save();renderAll();}
 function setHistoricalTarget(value){current().generation.historicalTarget=Number(value)/100;save();renderCoverageLevels();}
-function setDifferentiation(value){current().differentiation=Math.max(0,Math.min(10,Number(value)||0));save();renderCoverageLevels();renderFixtures();}
-function setSurpriseLevel(value){current().surpriseLevel=Math.max(0,Math.min(10,Number(value)||0));save();renderCoverageLevels();renderFixtures();}
+function setStrategyLevel(value){const level=Math.max(0,Math.min(10,Number(value)||0)),round=current();round.strategyLevel=level;round.differentiation=level;round.surpriseLevel=level;save();renderCoverageLevels();renderFixtures();}
 function baseSize() {
   return E.baseSize(current().base, current().goals);
 }
@@ -282,7 +281,7 @@ function renderFixtures() {
 }
 function renderGoals() {
   const goals = current().goals;
-  const labels = ["Local", "Visitante"];
+  const pleno=fixture()[14],labels = [pleno?.home||"Equipo local", pleno?.away||"Equipo visitante"];
   byId("plenoChoices").innerHTML = labels.map((label, side) =>
     '<div class="goal-side"><h3>' + label + '</h3><div class="goal-buttons">' + [..."012M"].map((goal) =>
       '<button class="' + (goals[side].includes(goal) ? "selected" : "") + '" onclick="toggleGoal(' + side + ',\'' + goal + '\')" ' + (!isEditable() ? "disabled" : "") + ">" + goal + "</button>",
@@ -682,7 +681,7 @@ function restoreFullDevelopment() {
 function saveCurrentSystem() {
   const round = current();
   if (!round.bets?.length) return setStatus("Genera primero las apuestas para guardar un sistema.", "error");
-  const name = (byId("systemName").value || ("Quiniela " + state.season + " J" + state.round)).trim().slice(0, 60);
+  const name = ("Quiniela " + state.season + " J" + state.round).trim().slice(0, 60);
   const system = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7), name,
     season: state.season, round: state.round, base: round.base.slice(), goals: round.goals.slice(),
     filters: JSON.parse(JSON.stringify(round.filters)), locks: round.locks.slice(), bets: round.bets.slice(),

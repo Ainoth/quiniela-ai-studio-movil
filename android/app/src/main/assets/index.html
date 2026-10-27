@@ -40,8 +40,7 @@
           </div>
           <label id="localSourceRow" class="field-label local-source-row" hidden>Fuentes importadas<select id="localSourceSelect" onchange="selectSource(this.value)"></select></label>
           <p id="sourceNote" class="help-text">Mercado estima probabilidades deportivas; Popularidad muestra signos jugados. No son equivalentes ni predicen aciertos.</p>
-          <label class="field-label" for="differenceLevel">Diferenciación del público <output id="differenceLevelValue">0/10</output></label><input id="differenceLevel" type="range" min="0" max="10" step="1" value="0" oninput="setDifferentiation(this.value)"><p class="help-text">A 0 sigue el mercado. Al subir, prioriza signos menos jugados por el público respecto al mercado. Requiere ambas fuentes y puede reducir los aciertos.</p>
-          <label class="field-label" for="surpriseLevel">Factor sorpresa <output id="surpriseLevelValue">0/10 · 4 partidos</output></label><input id="surpriseLevel" type="range" min="0" max="10" step="1" value="0" oninput="setSurpriseLevel(this.value)"><p class="help-text">Estima el desvío como 100% menos la probabilidad del signo favorito. Usa Mercado cuando está disponible; en su defecto, la fuente de pronóstico o el historial. En 0, los dobles/triples se asignan primero a los 4 de mayor riesgo; cada paso incorpora otro hasta los 14. Popularidad refleja apuestas del público, no probabilidad deportiva.</p>
+          <label class="field-label" for="strategyLevel">Sorpresa y diferenciación <output id="strategyLevelValue">0/10 · 4 partidos</output></label><input id="strategyLevel" type="range" min="0" max="10" step="1" value="0" oninput="setStrategyLevel(this.value)"><p class="help-text">Al subir, combina dos efectos: prioriza signos menos populares al ajustar Mercado y amplía de 4 a 14 los partidos candidatos para dobles/triples, empezando por aquellos donde es más probable que falle el favorito. Si faltan Mercado o Popularidad, solo se aplica el orden de riesgo con la fuente disponible.</p>
           <details class="advanced-source"><summary>Editar matriz y combinar fuentes auxiliares</summary>
             <div class="button-row"><button class="outline" onclick="copySelectedToMatrix()">Copiar fuente seleccionada</button><button class="outline" onclick="normalizeMatrix()">Normalizar filas</button><button class="outline" onclick="saveMatrix()">Guardar %</button><button class="outline" onclick="loadMatrix()">Cargar %</button></div>
             <div id="matrixEditor" class="matrix-editor"></div>
@@ -53,10 +52,11 @@
           </details>
           <div class="coverage-head"><strong>Base de generación</strong><span id="coverageCaption">14 fijos · 0 dobles · 0 triples</span></div>
           <label class="field-label" for="generationMode">Cómo elegir dobles y triples</label>
-          <select id="generationMode" onchange="setGenerationMode(this.value)"><option value="automatic">Automática según histórico seleccionado</option><option value="manual">Manual · indicar cantidades</option></select>
+          <select id="generationMode" onchange="setGenerationMode(this.value)"><option value="automatic">Automática · según temporadas</option><option value="manual">Manual · indicar cantidades</option></select>
+          <details class="history-controls"><summary id="historySummary">Temporadas históricas</summary><div class="history-buttons"><button class="outline" onclick="selectAllHistory(true)">Todas</button><button class="outline" onclick="selectAllHistory(false)">Ninguna</button></div><div id="historySeasons" class="history-seasons"></div><label class="field-label" for="historicalTarget">Cobertura de la muestra histórica <output id="historicalTargetValue">70%</output></label><input id="historicalTarget" type="range" min="10" max="100" step="5" value="70" oninput="setHistoricalTarget(this.value)"><p id="historyDescription" class="help-text">La cobertura describe la muestra elegida; no pronostica los resultados futuros.</p></details>
+          <p id="generationModeHint" class="help-text">En automático, el programa calcula los dobles y triples.</p>
           <div class="count-grid generator-counts"><span>Tipo</span><span>Cantidad</span><span></span><b>Dobles</b><input id="doubleCount" type="number" min="0" max="14" value="1" onchange="setGenerationCounts()"><span></span><b>Triples</b><input id="tripleCount" type="number" min="0" max="14" value="1" onchange="setGenerationCounts()"><span></span></div>
           <button id="fillBaseButton" class="secondary full" onclick="fillBase()" disabled>Crear base</button>
-          <details class="history-controls"><summary>Temporadas y cobertura histórica</summary><div class="history-buttons"><button class="outline" onclick="selectAllHistory(true)">Todas</button><button class="outline" onclick="selectAllHistory(false)">Ninguna</button></div><div id="historySeasons" class="history-seasons"></div><label class="field-label" for="historicalTarget">Cobertura de la muestra histórica <output id="historicalTargetValue">70%</output></label><input id="historicalTarget" type="range" min="10" max="100" step="5" value="70" oninput="setHistoricalTarget(this.value)"><p id="historySummary" class="help-text">Selecciona las temporadas que quieres usar. Esta cobertura describe la muestra elegida; no pronostica los resultados futuros.</p></details>
           <p class="help-text">La modalidad automática busca la menor base que alcance la cobertura elegida en las temporadas seleccionadas. El cálculo usa los porcentajes activos para ordenar los signos y el histórico para elegir dobles/triples.</p>
         </section>
 
@@ -80,13 +80,12 @@
             <button class="outline" onclick="exportCurrentTxt()">Guardar TXT</button>
           </div>
         </section>
-      </section>
 
-      <section id="page-reducciones" class="page" aria-labelledby="title-reducciones">
-        <div class="page-heading"><div><span class="eyebrow">REDUCCIÓN DE APUESTAS</span><h1 id="title-reducciones">Reducidas</h1></div></div>
-        <p class="intro">Crea una base independiente mediante una de las seis tablas publicadas. El mínimo indicado se condiciona a acertar la base completa de 14 signos; no garantiza premio ni Pleno.</p>
-        <section class="card"><label class="field-label" for="reductionTable">Tabla oficial de reducida</label><select id="reductionTable" onchange="selectReductionTable(this.value)"></select><p id="officialReductionInfo" class="help-text">Elige una tabla y consulta su número de dobles, triples y columnas.</p><label class="switch-label"><input id="manualReductionPositions" type="checkbox" onchange="toggleManualReductionPositions(this.checked)"> Elegir posiciones manualmente</label><div id="reductionPositions" class="reduction-positions"></div><button class="outline full" onclick="buildReducedBase()">Proponer base según porcentajes</button><button class="primary full" onclick="applyOfficialReduction()">Generar apuestas reducidas</button></section>
-        <details class="card"><summary>Reducción adicional por presupuesto</summary><label class="field-label" for="reductionBudget">Presupuesto máximo (€)</label><input id="reductionBudget" type="number" min="0.01" max="100000" step="0.01" value="10"><p id="reductionInfo" class="help-text">Reduce el desarrollo actual con priorización probabilística y diversidad; no es una tabla oficial.</p><button class="secondary full" onclick="applyReduction()">Reducir por presupuesto</button><button class="outline full" onclick="restoreFullDevelopment()">Restaurar desarrollo completo</button></details>
+        <details class="card reduction-inline"><summary>Reducir apuestas · tablas oficiales y presupuesto</summary>
+          <p class="help-text">La cobertura de las tablas oficiales es condicional a acertar los 14 signos de la base.</p>
+          <label class="field-label" for="reductionTable">Tabla oficial de reducida</label><select id="reductionTable" onchange="selectReductionTable(this.value)"></select><p id="officialReductionInfo" class="help-text">Elige una tabla para consultar su coste y cobertura.</p><label class="switch-label"><input id="manualReductionPositions" type="checkbox" onchange="toggleManualReductionPositions(this.checked)"> Elegir posiciones manualmente</label><div id="reductionPositions" class="reduction-positions"></div><button class="outline full" onclick="buildReducedBase()">Proponer base según porcentajes</button><button class="primary full" onclick="applyOfficialReduction()">Generar apuestas reducidas</button>
+          <details class="budget-inline"><summary>Optimizar por presupuesto</summary><label class="field-label" for="reductionBudget">Presupuesto máximo (€)</label><input id="reductionBudget" type="number" min="0.01" max="100000" step="0.01" value="10"><p id="reductionInfo" class="help-text">Selecciona apuestas priorizando probabilidad y diversidad.</p><button class="secondary full" onclick="applyReduction()">Reducir desarrollo</button><button class="outline full" onclick="restoreFullDevelopment()">Restaurar desarrollo completo</button></details>
+        </details>
       </section>
 
       <section id="page-condiciones" class="page" aria-labelledby="title-condiciones">
@@ -120,10 +119,22 @@
       </section>
 
       <section id="page-sistemas" class="page" aria-labelledby="title-sistemas">
-        <div class="page-heading"><div><span class="eyebrow">GUARDADOS EN EL TELÉFONO</span><h1 id="title-sistemas">Mis sistemas</h1></div></div>
-        <p class="intro">Guarda una copia del sistema actual por temporada y jornada. Puedes abrirla o exportarla como TXT.</p>
-        <section class="card save-card"><label class="field-label" for="systemName">Nombre del sistema</label><input id="systemName" type="text" maxlength="60" placeholder="Mi quiniela"><button class="primary full" onclick="saveCurrentSystem()">Guardar sistema actual</button></section>
+        <div class="page-heading"><div><span class="eyebrow">EN ESTE TELÉFONO</span><h1 id="title-sistemas">Mis sistemas</h1></div><button class="primary compact-save" onclick="saveCurrentSystem()">＋ Guardar actual</button></div>
         <div id="systemsList" class="systems-list"><div class="empty">Todavía no hay sistemas guardados.</div></div>
+      </section>
+
+      <section id="page-escrutinio" class="page" aria-labelledby="title-escrutinio">
+        <div class="page-heading"><div><span class="eyebrow">TUS APUESTAS, PARTIDO A PARTIDO</span><h1 id="title-escrutinio">Escrutinio</h1></div></div>
+        <p class="intro">Importa tus apuestas, sigue los aciertos en directo y consulta una estimación orientativa en la propia app.</p>
+        <section class="card scrutiny-controls">
+          <div class="select-row scrutiny-select-row"><label>Temporada<select id="scrutinySeason" onchange="scrutinyChangeSeason(this.value)"></select></label><label>Jornada<select id="scrutinyRound" onchange="scrutinyChangeRound(this.value)"></select></label><button class="quiet" onclick="scrutinyGoCurrentRound()">En curso</button></div>
+          <div class="scrutiny-actions"><button class="primary" onclick="Android.pickTextFile()">＋ Importar apuestas TXT</button><button class="outline" onclick="scrutinyUseDevelopment()">Usar desarrollo actual</button><button class="outline" onclick="scrutinyRefresh()">↻ Actualizar marcador</button><button class="outline" onclick="scrutinyUpdateData()">↻ Actualizar datos</button></div>
+          <p id="scrutinyStatus" class="help-text">Descarga los datos y selecciona o importa tus apuestas para comenzar.</p>
+        </section>
+        <section class="summary-card scrutiny-summary" aria-live="polite"><div class="summary-icon">⚽</div><div class="summary-copy"><span id="scrutinyBetCaption">TUS APUESTAS</span><strong id="scrutinySummary">Importa un TXT o usa el desarrollo actual</strong><small id="scrutinyDetail">Las apuestas se guardan por temporada y jornada.</small><div class="scrutiny-totals"><div><b id="scrutinyHits">—</b><small>Aciertos</small></div><div><b id="scrutinyMisses">—</b><small>Fallos</small></div><div><b id="scrutinyPending">14</b><small>Pendientes</small></div></div></div></section>
+        <section class="card"><div class="section-title"><div><span class="eyebrow">PARTIDO A PARTIDO</span><h2>Marcadores y signos</h2></div><span id="scrutinyProgress" class="progress-pill">0/14</span></div><div id="scrutinyMatches" class="matches"><div class="empty">Actualiza los datos para mostrar los partidos.</div></div></section>
+        <section class="card scrutiny-prizes"><div class="prize-top"><span class="trophy">★</span><div><span class="eyebrow">REPARTO PUBLICADO</span><h2>Premios oficiales</h2></div></div><div id="scrutinyPrizes"><div class="empty">El desglose aparece cuando WIN1X2 publica el escrutinio definitivo.</div></div><small class="disclaimer">Cálculo sobre las apuestas importadas. No confirma que el boleto esté sellado ni acredita un cobro.</small></section>
+        <section class="card scrutiny-estimate"><div class="prize-top"><span class="trophy">≈</span><div><span class="eyebrow">PREVISIÓN ORIENTATIVA</span><h2>Estimación de tus apuestas</h2></div></div><div id="scrutinyEstimate" class="prizes"><div class="empty">Actualiza la estimación para consultar el escenario de esta jornada.</div></div><small class="disclaimer">Estimación aproximada basada en recaudación y porcentajes jugados. Los partidos pendientes se proyectan con el signo más probable; el importe puede variar.</small><button class="outline full estimate-refresh" onclick="scrutinyUpdateEstimate(true)">↻ Actualizar estimación</button></section>
       </section>
 
       <section id="page-ajustes" class="page" aria-labelledby="title-ajustes">
@@ -132,31 +143,16 @@
         <section class="card settings-card"><h2>Datos y privacidad</h2><p>Jornadas, porcentajes y sistemas se conservan en este dispositivo. Las descargas solo consultan WIN1X2 y Quinielista. Guardar un TXT no lo envía ni realiza apuestas.</p></section>
         <section class="card settings-card"><button class="outline full" onclick="updateData()">Actualizar calendario y porcentajes</button><p id="dataUpdated" class="help-text">Todavía no se han descargado datos.</p></section>
       </section>
-
-      <section id="page-escrutinio" class="page" aria-labelledby="title-escrutinio">
-        <div class="page-heading"><div><span class="eyebrow">TUS APUESTAS, PARTIDO A PARTIDO</span><h1 id="title-escrutinio">Escrutinio</h1></div></div>
-        <p class="intro">Importa tus apuestas, sigue los aciertos en directo y consulta una estimación orientativa en la propia app.</p>
-        <section class="card scrutiny-controls">
-          <div class="select-row"><label>Temporada<select id="scrutinySeason" onchange="scrutinyChangeSeason(this.value)"></select></label><label>Jornada<select id="scrutinyRound" onchange="scrutinyChangeRound(this.value)"></select></label><button class="quiet" onclick="scrutinyGoCurrentRound()">En curso</button></div>
-          <div class="button-row scrutiny-actions"><button class="primary" onclick="Android.pickTextFile()">＋ Importar apuestas TXT</button><button class="outline" onclick="scrutinyUseDevelopment()">Usar desarrollo actual</button><button class="outline" onclick="scrutinyRefresh()">↻ Actualizar marcador</button><button class="outline" onclick="scrutinyUpdateData()">↻ Actualizar datos</button></div>
-          <p id="scrutinyStatus" class="help-text">Descarga los datos y selecciona o importa tus apuestas para comenzar.</p>
-        </section>
-        <section class="summary-card scrutiny-summary" aria-live="polite"><div class="summary-icon">⚽</div><div class="summary-copy"><span id="scrutinyBetCaption">TUS APUESTAS</span><strong id="scrutinySummary">Importa un TXT o usa el desarrollo actual</strong><small id="scrutinyDetail">Las apuestas se guardan por temporada y jornada.</small><div class="scrutiny-totals"><div><b id="scrutinyHits">—</b><small>Aciertos</small></div><div><b id="scrutinyMisses">—</b><small>Fallos</small></div><div><b id="scrutinyPending">14</b><small>Pendientes</small></div></div></div></section>
-        <section class="card"><div class="section-title"><div><span class="eyebrow">PARTIDO A PARTIDO</span><h2>Marcadores y signos</h2></div><span id="scrutinyProgress" class="progress-pill">0/14</span></div><div id="scrutinyMatches" class="matches"><div class="empty">Actualiza los datos para mostrar los partidos.</div></div></section>
-        <section class="card scrutiny-prizes"><div class="prize-top"><span class="trophy">★</span><div><span class="eyebrow">REPARTO PUBLICADO</span><h2>Premios oficiales</h2></div></div><div id="scrutinyPrizes"><div class="empty">El desglose aparece cuando WIN1X2 publica el escrutinio definitivo.</div></div><small class="disclaimer">Cálculo sobre las apuestas importadas. No confirma que el boleto esté sellado ni acredita un cobro.</small></section>
-        <section class="card scrutiny-estimate"><div class="prize-top"><span class="trophy">≈</span><div><span class="eyebrow">PREVISIÓN ORIENTATIVA</span><h2>Estimación de tus apuestas</h2></div></div><div id="scrutinyEstimate" class="prizes"><div class="empty">Actualiza la estimación para consultar el escenario de esta jornada.</div></div><small class="disclaimer">Estimación aproximada basada en recaudación y porcentajes jugados. Los partidos pendientes se proyectan con el signo más probable; el importe puede variar.</small><button class="outline full estimate-refresh" onclick="scrutinyUpdateEstimate(true)">↻ Actualizar estimación</button></section>
-      </section>
     </main>
 
     <div id="actionDock" class="action-dock"><div><b id="dockCount">0 apuestas</b><small id="dockCost">0,00 €</small></div><button id="generateButton" class="primary" onclick="generateCurrent()" disabled>Generar quiniela</button></div>
     <nav class="bottom-nav" aria-label="Secciones principales">
       <button class="nav-button active" data-page="quiniela"><span>▦</span><small>Quiniela</small></button>
       <button class="nav-button" data-page="condiciones"><span>☷</span><small>Filtros</small></button>
-      <button class="nav-button" data-page="reducciones"><span>⇣</span><small>Reducidas</small></button>
       <button class="nav-button" data-page="analisis"><span>◔</span><small>Análisis</small></button>
       <button class="nav-button" data-page="sistemas"><span>▤</span><small>Sistemas</small></button>
-      <button class="nav-button" data-page="ajustes"><span>⚙</span><small>Ajustes</small></button>
       <button class="nav-button" data-page="escrutinio"><span>✓</span><small>Escrutinio</small></button>
+      <button class="nav-button" data-page="ajustes"><span>⚙</span><small>Ajustes</small></button>
     </nav>
     <div id="loading" class="loading hidden" role="status"><div class="spinner"></div><strong id="loadingText">Cargando…</strong></div>
     <script src="engine.js"></script>

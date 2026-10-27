@@ -1,5 +1,17 @@
 # Cambios
 
+## 0.5.0 — navegación y controles compactos
+
+- Hace visibles las temporadas del modo automático y deja las cantidades de
+  dobles y triples bloqueadas salvo que se elija el modo manual.
+- Une factor sorpresa y diferenciación del público en un único control de
+  estrategia, manteniendo el efecto de riesgo y el ajuste contra popularidad.
+- Muestra los equipos del Pleno al 15 y conserva las reducciones dentro de una
+  sección plegable de Quiniela, sin una pestaña dedicada.
+- Simplifica Mis sistemas, deja Ajustes al final de la navegación y compacta
+  los controles y filas de Escrutinio, con día y hora junto al número de partido.
+- Verificado con pruebas automatizadas y compilación Android.
+
 ## 0.4.0 — generación histórica y factor sorpresa
 
 - La generación automática selecciona dobles y triples según los resultados de
@@ -9,8 +21,7 @@
 - Añade el factor sorpresa: estima el riesgo de fallo del signo favorito como
   1 menos su probabilidad, ordena los partidos y amplía progresivamente el grupo
   candidato de 4 a 14. Muestra el porcentaje estimado en cada partido.
-- Mantiene separada la diferenciación del público, basada en Mercado y
-  Popularidad.
+- Añade diferenciación del público, basada en Mercado y Popularidad.
 - Incorpora el catálogo de tablas reducidas y el histórico empaquetado para
   generar sin conexión.
 - Verificado con pruebas automatizadas y compilación Android.

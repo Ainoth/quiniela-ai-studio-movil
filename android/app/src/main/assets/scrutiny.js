@@ -110,6 +110,7 @@ function renderScrutiny() {
   } else {
     byId("scrutinyMatches").innerHTML = matches.map((match, index) => {
       const result = results[index] || {};
+      const kickoff=escapeHtml(match.kick||"").replace(/^(\d{2}\/\d{2})\/\d{4}\s*·\s*(\d{2}:\d{2})$/,"$1<br>$2");
       const betSign = best?.bet[index] || "";
       const hit = index < 14 && result.sign && betSign && result.sign === betSign;
       const own = index < 14 && result.sign && betSign
@@ -117,9 +118,9 @@ function renderScrutiny() {
       const plenoHit = !!(best && best.bet.length === 16 && best.hits === 14 && best.bet.slice(14) === result.pleno);
       const pleno = index === 14 && best && best.bet.length === 16 && result.pleno
         ? '<small class="hit-mark ' + (plenoHit ? "ok" : "no") + '">' + (plenoHit ? "✓ Pleno acertado" : "× Pleno distinto") + "</small>" : "";
-      return '<article class="match ' + (result.final ? "final" : result.sign ? "" : "pending") + '"><span class="match-number">' + String(index + 1).padStart(2, "0") +
-        '</span><span class="teams"><strong>' + escapeHtml(match.home) + " – " + escapeHtml(match.away) + '</strong><small>' +
-        escapeHtml(result.status || match.kick || "Pendiente") + '</small></span><span class="score">' + escapeHtml(result.score || "—") +
+      return '<article class="match ' + (result.final ? "final" : result.sign ? "" : "pending") + '"><span class="match-number"><b>' + String(index + 1).padStart(2, "0") + '</b><small class="match-kick">' + kickoff +
+        '</small></span><span class="teams"><strong>' + escapeHtml(match.home) + " – " + escapeHtml(match.away) + '</strong><small>' +
+        escapeHtml(result.status || "Pendiente") + '</small></span><span class="score">' + escapeHtml(result.score || "—") +
         '</span><span class="sign">' + escapeHtml(index === 14 ? (result.pleno || "P15") : (result.sign || "—")) + "</span>" + own + pleno + "</article>";
     }).join("");
   }
