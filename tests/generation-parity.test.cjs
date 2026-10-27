@@ -80,6 +80,12 @@ test("public differentiation level zero leaves sport probabilities unchanged", (
   assert.ok(adjusted[0][2]>market[0][2]);
 });
 
+test("automatic Pleno picks each team's most probable goal from market marginals", () => {
+  assert.deepEqual(E.automaticPleno([[0.1,0.5,0.3,0.1],[0.4,0.1,0.2,0.3]]),["1","0"]);
+  assert.deepEqual(E.automaticPleno([[0.25,0.25,0.25,0.25],[0.1,0.1,0.1,0.7]]),["0","M"]);
+  assert.throws(()=>E.automaticPleno([[0.5,0.5],[0.25,0.25,0.25,0.25]]),/inválidas/);
+});
+
 test("probability JSON import checks round, ordered matches, type and capture time", () => {
   const doc = {schema:"quiniela_ai_studio.probabilities",version:1,round_key:"26-27/J13",source:"Fixture",captured_at:"2026-10-27T10:00:00+01:00",kind:"form5",
     matches: matches.map((m,i)=>({number:i+1,...m,p1:40,px:30,p2:30}))};

@@ -7,6 +7,8 @@ const assets = path.join(__dirname, "../android/app/src/main/assets");
 const html = fs.readFileSync(path.join(assets, "index.html"), "utf8");
 const app = fs.readFileSync(path.join(assets, "app.js"), "utf8");
 const scrutiny = fs.readFileSync(path.join(assets, "scrutiny.js"), "utf8");
+const style = fs.readFileSync(path.join(assets, "style.css"), "utf8");
+const history = fs.readFileSync(path.join(assets, "historical-data.js"), "utf8");
 
 test("Quiniela AI Studio expone Escrutinio en la navegación móvil", () => {
   assert.match(html, /data-page="escrutinio"[^>]*>[\s\S]*?<small>Escrutinio<\/small>/);
@@ -44,4 +46,19 @@ test("un único control combina sorpresa y diferenciación y Pleno muestra los e
 test("los controles de escrutinio son compactos y la fecha queda en la columna del partido", () => {
   assert.match(html, /class="scrutiny-actions"/);
   assert.match(scrutiny, /class="match-kick"/);
+});
+
+test("el Pleno tiene selección automática de mercado o frecuencias históricas", () => {
+  assert.match(html, /id="autoPlenoButton"/);
+  assert.match(app, /marketPleno/);
+  assert.match(app, /historyPlenoProbabilities/);
+  assert.match(app, /plenoMode: "automatic"/);
+  assert.match(app, /plenoMode=system\.plenoMode\|\|"manual"/);
+  assert.match(history, /"pleno"/);
+});
+
+test("Condiciones muestra filas visuales y botones compactos mantienen tamaño de texto legible", () => {
+  assert.match(html, /class="condition-count-row"/);
+  assert.match(style, /\.scrutiny-actions button[^}]*font-size:11px/);
+  assert.match(style, /\.system-actions button[^}]*font-size:11px/);
 });

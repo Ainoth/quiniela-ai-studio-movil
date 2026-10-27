@@ -66,7 +66,8 @@
         </section>
 
         <section class="card pleno-card">
-          <div class="section-title"><div><span class="eyebrow">PLENO AL 15</span><h2>Goles de cada equipo</h2></div><span id="plenoCount" class="progress-pill">1 resultado</span></div>
+          <div class="section-title"><div><span class="eyebrow">PLENO AL 15</span><h2>Goles de cada equipo</h2></div><div class="pleno-actions"><span id="plenoCount" class="progress-pill">1 pareja</span><button id="autoPlenoButton" class="outline" onclick="autoSelectPleno()">✓ Automático</button></div></div>
+          <p id="plenoModeNote" class="help-text">Selección automática según el mercado o el historial.</p>
           <div id="plenoChoices" class="pleno-grid"></div>
           <p class="help-text">M equivale a 3 o más goles. Cada selección combina los dos equipos y multiplica las apuestas.</p>
         </section>
@@ -93,11 +94,11 @@
         <p class="intro">Estas reglas se aplican al generar. Desactivarlas conserva sus valores.</p>
         <section class="card condition-card">
           <div class="section-title"><div><span class="eyebrow">CUENTA</span><h2>Cuántos signos</h2></div><label class="switch-label">Aplicar<input id="accountEnabled" type="checkbox" onchange="updateFilters()"></label></div>
-          <div class="count-grid"><span>Signo</span><span>Mín.</span><span>Máx.</span>
-            <b>1</b><input id="min1" type="number" min="0" max="14" onchange="updateFilters()"><input id="max1" type="number" min="0" max="14" onchange="updateFilters()">
-            <b>X</b><input id="minX" type="number" min="0" max="14" onchange="updateFilters()"><input id="maxX" type="number" min="0" max="14" onchange="updateFilters()">
-            <b>2</b><input id="min2" type="number" min="0" max="14" onchange="updateFilters()"><input id="max2" type="number" min="0" max="14" onchange="updateFilters()">
-            <b>V</b><input id="minV" type="number" min="0" max="14" onchange="updateFilters()"><input id="maxV" type="number" min="0" max="14" onchange="updateFilters()">
+          <div class="condition-counts"><div class="condition-count-head"><span>Signo</span><span>Mínimo</span><span>Máximo</span></div>
+            <div class="condition-count-row"><b class="condition-sign sign-1">1</b><input id="min1" aria-label="Mínimo de signos 1" type="number" min="0" max="14" onchange="updateFilters()"><input id="max1" aria-label="Máximo de signos 1" type="number" min="0" max="14" onchange="updateFilters()"></div>
+            <div class="condition-count-row"><b class="condition-sign sign-x">X</b><input id="minX" aria-label="Mínimo de empates" type="number" min="0" max="14" onchange="updateFilters()"><input id="maxX" aria-label="Máximo de empates" type="number" min="0" max="14" onchange="updateFilters()"></div>
+            <div class="condition-count-row"><b class="condition-sign sign-2">2</b><input id="min2" aria-label="Mínimo de signos 2" type="number" min="0" max="14" onchange="updateFilters()"><input id="max2" aria-label="Máximo de signos 2" type="number" min="0" max="14" onchange="updateFilters()"></div>
+            <div class="condition-count-row"><b class="condition-sign sign-v">V</b><input id="minV" aria-label="Mínimo de variantes" type="number" min="0" max="14" onchange="updateFilters()"><input id="maxV" aria-label="Máximo de variantes" type="number" min="0" max="14" onchange="updateFilters()"></div>
           </div>
           <p class="help-text">V agrupa X y 2 como variantes. Los mínimos y máximos se comprueban sobre los 14 partidos.</p>
         </section>

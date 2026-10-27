@@ -79,6 +79,15 @@
     });
   }
 
+  function automaticPleno(plenoValues) {
+    if(!Array.isArray(plenoValues)||plenoValues.length!==2)throw Error("Faltan probabilidades del Pleno al 15.");
+    return plenoValues.map((row,side)=>{
+      if(!Array.isArray(row)||row.length!==4||row.some(x=>!Number.isFinite(Number(x))||Number(x)<0||Number(x)>1)||Math.abs(row.reduce((a,b)=>a+Number(b),0)-1)>0.02)throw Error("Probabilidades inválidas del Pleno para el equipo "+(side+1)+".");
+      let best=0;for(let i=1;i<4;i++)if(Number(row[i])>Number(row[best]))best=i;
+      return "012M"[best];
+    });
+  }
+
   function parseProbabilitySource(text, filename, roundKey, matches, sourceKind="custom") {
     if(String(text).length>20*1024*1024)throw Error("La fuente supera el límite de 20 MiB.");
     const parseValues=(raw,index)=>{
@@ -480,7 +489,7 @@
 
   root.EscrutinioEngine = { roundLine, parseKickoff, formatKickoff, parseDates, parseHours, parseNames,
     normalizeTeam, sameTeamName,
-    normalizeBase, validateProbabilities, parseProbabilitySource, coverageBase, configuredBase, automaticBase, historicalBase, weightedProbabilities, differentiateProbabilities, surpriseOrder, surpriseEligiblePositions, reducedTemplate, reduceByTable, coverageCounts, baseSize, satisfiesFilters,
+    normalizeBase, validateProbabilities, automaticPleno, parseProbabilitySource, coverageBase, configuredBase, automaticBase, historicalBase, weightedProbabilities, differentiateProbabilities, surpriseOrder, surpriseEligiblePositions, reducedTemplate, reduceByTable, coverageCounts, baseSize, satisfiesFilters,
     generateBets, probabilityMass, MAX_GENERATED,
     availableRounds, currentRound, scrutiny, live, evaluate, categoryPossibilities, awardBreakdown };
   if (typeof module !== "undefined") module.exports = root.EscrutinioEngine;

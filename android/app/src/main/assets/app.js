@@ -20,7 +20,7 @@ function escapeHtml(value) {
 }
 function newRoundState() {
   return {
-    base: Array(14).fill("1"), goals: ["0", "0"], coverageLevel: 0,
+    base: Array(14).fill("1"), goals: ["0", "0"], plenoMode: "automatic", coverageLevel: 0,
     generation: { mode: "automatic", doubles: 1, triples: 1, historicalTarget: 0.7 },
     historySeasons: HISTORY.seasons.slice(),
     strategyLevel: 0, differentiation: 0, surpriseLevel: 0,
@@ -37,6 +37,7 @@ function current() {
   const key = roundKey();
   if (!state.rounds[key]) state.rounds[key] = newRoundState();
   const round=state.rounds[key];
+  if(!["automatic","manual"].includes(round.plenoMode))round.plenoMode=round.goals?.join("")==="00"?"automatic":"manual";
   if(!round.generation)round.generation={mode:"automatic",doubles:1,triples:1,historicalTarget:0.7};
   if(!Number.isFinite(Number(round.generation.historicalTarget)))round.generation.historicalTarget=0.7;
   if(!Array.isArray(round.historySeasons))round.historySeasons=HISTORY.seasons.slice();
@@ -242,6 +243,9 @@ function countPairs() {
 function technicalColumnLimit(){return Math.max(1,Math.floor(E.MAX_GENERATED/Math.max(1,countPairs())));}
 function selectedHistoryRows(){const selected=new Set(current().historySeasons||[]);return (HISTORY.seasons||[]).filter(season=>selected.has(season)).flatMap(season=>HISTORY.results[season]||[]);}
 function historyProbabilities(results=selectedHistoryRows()){if(!results.length)return null;return Array.from({length:14},(_,i)=>["1","X","2"].map(sign=>results.filter(row=>row[i]===sign).length/results.length));}
+function historyPlenoProbabilities(){const selected=new Set(current().historySeasons||[]),rows=Object.entries(HISTORY.pleno||{}).filter(([season])=>selected.has(season)).flatMap(([,values])=>values);if(!rows.length)return null;return [0,1].map(side=>[..."012M"].map(goal=>rows.filter(row=>row[side]===goal).length/rows.length));}
+function plenoProbabilitySource(){const data=state.percentages[roundKey()]||{};if(data.marketPleno)return {values:data.marketPleno,label:"Mercado"};if(data.publicPleno)return {values:data.publicPleno,label:"Popularidad"};const historical=historyPlenoProbabilities();return historical?{values:historical,label:"historial de temporadas seleccionadas"}:null;}
+function automaticPlenoGoals(){const source=plenoProbabilitySource();return source?{goals:E.automaticPleno(source.values),label:source.label}:null;}
 function surpriseProbabilityRows(){const data=state.percentages[roundKey()]||{};try{if(data.market)return effectiveProbabilities()||data.market;if(current().selectedSource==="public")return historyProbabilities();return effectiveProbabilities()||historyProbabilities();}catch(_){return data.market||historyProbabilities();}}
 function renderHistoryControls(){
   const round=current(),selected=new Set(round.historySeasons||[]),seasons=(HISTORY.seasons||[]).slice().reverse();
@@ -280,13 +284,16 @@ function renderFixtures() {
   byId("baseCount").textContent = size.toLocaleString("es-ES") + (size === 1 ? " apuesta base" : " apuestas base");
 }
 function renderGoals() {
-  const goals = current().goals;
+  const round=current();
+  if(round.plenoMode==="automatic"){const predicted=automaticPlenoGoals();if(predicted)round.goals=predicted.goals;}
+  const goals = round.goals;
   const pleno=fixture()[14],labels = [pleno?.home||"Equipo local", pleno?.away||"Equipo visitante"];
   byId("plenoChoices").innerHTML = labels.map((label, side) =>
     '<div class="goal-side"><h3>' + label + '</h3><div class="goal-buttons">' + [..."012M"].map((goal) =>
       '<button class="' + (goals[side].includes(goal) ? "selected" : "") + '" onclick="toggleGoal(' + side + ',\'' + goal + '\')" ' + (!isEditable() ? "disabled" : "") + ">" + goal + "</button>",
     ).join("") + "</div></div>",
   ).join("");
+  const source=automaticPlenoGoals();byId("autoPlenoButton").textContent=round.plenoMode==="automatic"?"✓ Automático":"Automático";byId("autoPlenoButton").disabled=!isEditable()||!source;byId("plenoModeNote").textContent=round.plenoMode==="automatic"?(source?"Pleno generado por "+source.label+". Puedes cambiarlo tocando los goles.":"Sin datos suficientes: elige goles manualmente."):"Selección manual. Pulsa Automático para usar el pronóstico.";
   const count = countPairs();
   byId("plenoCount").textContent = count + (count === 1 ? " pareja" : " parejas");
 }
@@ -416,10 +423,10 @@ function renderAll() {
   renderSource();
   renderHistoryControls();
   renderMatrixEditor();
+  renderGoals();
   renderReductionSetup();
   renderCoverageLevels();
   renderFixtures();
-  renderGoals();
   renderGenerated();
   renderActions();
   renderSettings();
@@ -459,13 +466,15 @@ function buildSourceData(xml) {
   if (tags.length !== 15) throw Error("La fuente no contiene los 15 encuentros de la quiniela.");
   const matches = fixture();
   const market = [], popularity = [];
+  const readPleno=(tag,prefix,suffix="")=>{const fields=["L","V"].map(side=>[..."012M"].map(goal=>prefix+goal+side+suffix));const present=fields.flat().map(field=>tag.getAttribute(field)!==null);if(!present.some(Boolean))return null;if(!present.every(Boolean))throw Error("Porcentajes del Pleno incompletos.");return fields.map(row=>{const values=row.map(field=>Number(tag.getAttribute(field))),sum=values.reduce((a,b)=>a+b,0);if(values.some(value=>!Number.isFinite(value)||value<0||value>100)||sum<99||sum>101)throw Error("Porcentajes del Pleno inválidos.");return values.map(value=>value/sum);});};
+  let marketPleno=null,publicPleno=null;
   tags.forEach((tag, index) => {
     const number = Number(tag.getAttribute("num"));
     if (number !== index + 1) throw Error("La fuente contiene partidos desordenados.");
     if (!E.sameTeamName(tag.getAttribute("local"), matches[index].home)
       || !E.sameTeamName(tag.getAttribute("visitante"), matches[index].away))
       throw Error("Los equipos no coinciden en el partido " + (index + 1) + ". No se han mezclado porcentajes.");
-    if (index === 14) return;
+    if (index === 14) {marketPleno=readPleno(tag,"p_bf_","desc")||readPleno(tag,"p_bf_");publicPleno=readPleno(tag,"p_jugados_");return;}
     const read = (fields, name) => {
       const values = fields.map((field) => Number(tag.getAttribute(field)));
       const sum = values.reduce((total, value) => total + value, 0);
@@ -478,7 +487,7 @@ function buildSourceData(xml) {
     if (marketFields.some((field) => tag.getAttribute(field) === null)) marketFields = ["p_bf_1", "p_bf_X", "p_bf_2"];
     if (marketFields.every((field) => tag.getAttribute(field) !== null)) market.push(read(marketFields, "Porcentajes de mercado"));
   });
-  return { public: popularity, market: market.length === 14 ? market : null,
+  return { public: popularity, market: market.length === 14 ? market : null, marketPleno, publicPleno,
     source: "Quinielista", capturedAt: new Date().toISOString() };
 }
 async function updateData() {
@@ -610,6 +619,7 @@ function toggleSign(index, sign) {
 function toggleLock(index){if(!isEditable())return setStatus("Solo se bloquea la base de la jornada en curso.","error");current().locks[index]=!current().locks[index];save();renderAll();}
 function toggleGoal(side, goal) {
   if (!isEditable()) return setStatus("Solo se edita el Pleno de la jornada en curso.", "error");
+  current().plenoMode="manual";
   const goals = current().goals;
   const selected = new Set(goals[side]);
   selected.has(goal) ? selected.delete(goal) : selected.add(goal);
@@ -618,6 +628,7 @@ function toggleGoal(side, goal) {
   current().bets = [];
   save(); renderAll();
 }
+function autoSelectPleno(){if(!isEditable())return setStatus("Solo se genera el Pleno de la jornada en curso.","error");const predicted=automaticPlenoGoals();if(!predicted)return setStatus("No hay probabilidades ni resultados históricos de Pleno para automatizar esta selección.","error");current().plenoMode="automatic";current().goals=predicted.goals;save();renderAll();setStatus("Pleno automático seleccionado según "+predicted.label+".","success");}
 function generateCurrent() {
   if (busy) return;
   if (!isEditable()) return setStatus("Selecciona la jornada en curso para generar apuestas.", "error");
@@ -683,7 +694,7 @@ function saveCurrentSystem() {
   if (!round.bets?.length) return setStatus("Genera primero las apuestas para guardar un sistema.", "error");
   const name = ("Quiniela " + state.season + " J" + state.round).trim().slice(0, 60);
   const system = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7), name,
-    season: state.season, round: state.round, base: round.base.slice(), goals: round.goals.slice(),
+    season: state.season, round: state.round, base: round.base.slice(), goals: round.goals.slice(), plenoMode: round.plenoMode,
     filters: JSON.parse(JSON.stringify(round.filters)), locks: round.locks.slice(), bets: round.bets.slice(),
     source: round.selectedSource, createdAt: new Date().toISOString() };
   state.systems.push(system);
@@ -695,7 +706,7 @@ function openSystem(id) {
   if (!system) return setStatus("No se encontró el sistema guardado.", "error");
   state.season = system.season; state.round = system.round;
   const round = current();
-  round.base = system.base.slice(); round.goals = system.goals.slice();
+  round.base = system.base.slice(); round.goals = system.goals.slice(); round.plenoMode=system.plenoMode||"manual";
   round.locks = Array.isArray(system.locks)&&system.locks.length===14?system.locks.slice():Array(14).fill(false);
   round.filters = JSON.parse(JSON.stringify(system.filters)); round.bets = system.bets.slice();
   round.generatedAt = "Sistema guardado"; round.selectedSource = system.source || "manual";

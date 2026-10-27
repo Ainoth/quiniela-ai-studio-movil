@@ -2,6 +2,8 @@
 
 | Requisito | Estado | Verificación |
 |---|---|---|
+| RF-MOV-014 · completar automáticamente las selecciones del Pleno | Implementado v0.5.1 | marginales del mercado y respaldo por frecuencias históricas por temporadas; selección manual disponible |
+| RF-MOV-015 · facilitar lectura visual de Condiciones y controles | Implementado v0.5.1 | filas coloreadas por signo y botones más compactos sin reducir su texto |
 | RF-MOV-012 · simplificar navegación y unificar estrategia de sorpresa/público | Implementado v0.5.0 | selector único, reducciones plegables en Quiniela, Ajustes al final |
 | RF-MOV-013 · mostrar equipos de Pleno y compactar Escrutinio | Implementado v0.5.0 | nombres desde el calendario WIN1X2, día/hora bajo el número de partido y controles compactos |
 | RF-MOV-008 · generar base histórica o configurar manualmente fijos, dobles y triples | Implementado v0.5.0 | temporadas seleccionadas visibles en modo automático; cantidades bloqueadas salvo modo manual |

@@ -1,5 +1,16 @@
 # Cambios
 
+## 0.5.1 — Pleno automático y controles legibles
+
+- El Pleno se completa automáticamente con el resultado más probable de cada
+  equipo: primero usa las marginales de mercado publicadas y, si faltan, las
+  frecuencias de los resultados históricos de las temporadas seleccionadas.
+  Tocar los goles permite pasar a selección manual y volver al modo automático.
+- Hace más visual la configuración de condiciones con filas y colores por signo.
+- Recupera el tamaño legible de texto en Mis sistemas y Escrutinio; reduce el
+  área de los botones de Escrutinio con menos altura y relleno.
+- Verificado con pruebas automatizadas y compilación Android.
+
 ## 0.5.0 — navegación y controles compactos
 
 - Hace visibles las temporadas del modo automático y deja las cantidades de
