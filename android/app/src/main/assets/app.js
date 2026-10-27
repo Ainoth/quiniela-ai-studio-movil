@@ -346,9 +346,10 @@ document.querySelectorAll(".nav-button").forEach((button) => button.addEventList
 function renderFilters() {
   const filters=current().filters;byId("accountEnabled").checked=filters.accountEnabled;byId("streakEnabled").checked=filters.streakEnabled;
   const signs=[["1","1","sign-1"],["X","X","sign-x"],["2","2","sign-2"],["V","V","sign-v"]];
-  const tile=(allowed,label,kind,key,value)=>`<button class="condition-tile ${allowed?"on":"off"}" aria-label="${label}" aria-pressed="${allowed}" onclick="toggleConditionValue('${kind}','${key}',${value})">${value}</button>`;
-  byId("conditionCounts").innerHTML=signs.map(([key,label,cls])=>`<div class="condition-count-row"><b class="condition-sign ${cls}">${label}</b>${tile(filters.allowedCounts[key][0],label+": 0 signos","count",key,0)}${Array.from({length:14},(_,i)=>tile(filters.allowedCounts[key][i+1],label+": "+(i+1)+" signos","count",key,i+1)).join("")}</div>`).join("");
-  byId("variantRunChoices").innerHTML=`<div class="condition-count-row"><b class="condition-sign sign-v">R</b>${tile(filters.allowedVariantRuns[0],"Racha de variantes: 0","run","",0)}${Array.from({length:14},(_,i)=>tile(filters.allowedVariantRuns[i+1],"Racha de variantes: "+(i+1),"run","",i+1)).join("")}</div>`;
+  const tile=(allowed,label,kind,key,value)=>`<button class="condition-tile ${allowed?"on":"off"}" aria-label="${label}" title="${label}" aria-pressed="${allowed}" onclick="toggleConditionValue('${kind}','${key}',${value})"></button>`;
+  const heading='<div class="condition-value-head"><span></span>'+Array.from({length:15},(_,n)=>'<span>'+n+'</span>').join("")+'</div>';
+  byId("conditionCounts").innerHTML=heading+signs.map(([key,label,cls])=>`<div class="condition-count-row"><b class="condition-sign ${cls}">${label}</b>${Array.from({length:15},(_,n)=>tile(filters.allowedCounts[key][n],label+": "+n+" signos","count",key,n)).join("")}</div>`).join("");
+  byId("variantRunChoices").innerHTML=heading+`<div class="condition-count-row"><b class="condition-sign sign-v">R</b>${Array.from({length:15},(_,n)=>tile(filters.allowedVariantRuns[n],"Racha de variantes: "+n,"run","",n)).join("")}</div>`;
   const active=filters.accountEnabled||filters.streakEnabled;byId("filterStatus").textContent=active?"Condiciones activas al generar":"Filtros desactivados";byId("filterEffect").textContent=active?"El filtro puede reducir el número de apuestas generado.":"Los valores se conservan. Activa una condición para aplicarla.";
 }
 function toggleConditionValue(kind,key,value){const f=current().filters;if(kind==="count")f.allowedCounts[key][value]=!f.allowedCounts[key][value];else f.allowedVariantRuns[value]=!f.allowedVariantRuns[value];save();renderFilters();}

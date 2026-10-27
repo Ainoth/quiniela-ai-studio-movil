@@ -7,6 +7,7 @@
 | RF-MOV-018 · alternar Pleno automático y manual | Implementado v0.5.2 | botón alterna estado y deja los goles seleccionados editables |
 | RF-MOV-019 · elegir cantidades exactas y rachas permitidas | Implementado v0.5.2 | casillas independientes por valor; compatibilidad con filtros previos |
 | RF-MOV-020 · ajustar tamaño y distribución de botones en Sistemas y Escrutinio | Implementado v0.5.2 | botones de sistema alineados a la derecha; controles de Escrutinio a ancho completo |
+| RF-MOV-021 · mostrar etiquetas de valores encima de las casillas de Condiciones | Implementado v0.5.3 | cabeceras numeradas, casillas vacías y menor altura |
 | RF-MOV-014 · completar automáticamente las selecciones del Pleno | Implementado v0.5.1 | marginales del mercado y respaldo por frecuencias históricas por temporadas; selección manual disponible |
 | RF-MOV-015 · facilitar lectura visual de Condiciones y controles | Implementado v0.5.1 | filas coloreadas por signo y botones más compactos sin reducir su texto |
 | RF-MOV-012 · simplificar navegación y unificar estrategia de sorpresa/público | Implementado v0.5.0 | selector único, reducciones plegables en Quiniela, Ajustes al final |

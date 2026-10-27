@@ -1,5 +1,12 @@
 # Cambios
 
+## 0.5.3 — cabeceras para las casillas de Condiciones
+
+- Mueve los valores de cada grupo a una cabecera de columna y deja las casillas sin texto interior.
+- Reduce la altura de las casillas para que las barras sean más compactas.
+- Verificado con pruebas automatizadas y compilación Android.
+
+
 ## 0.5.2 — sorpresa independiente y condiciones por valor
 
 - Separa el factor sorpresa de la diferenciación del público. El modo automático
