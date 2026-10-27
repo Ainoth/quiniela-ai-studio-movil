@@ -151,9 +151,9 @@ test("historical conditions select count and run values covering the requested s
   assert.throws(()=>E.historicalConditionFilters([],0.7),/Selecciona temporadas/);
 });
 
-test("condition risk levels progressively admit a wider share of historical values", () => {
+test("condition risk levels progressively narrow historical coverage and raise exclusion risk", () => {
   const coverage=["minimo","bajo","medio","alto","muy-alto"].map(E.conditionRiskCoverage);
-  assert.deepEqual(coverage,[0.5,0.65,0.8,0.9,0.97]);
-  assert.ok(coverage.every((value,index)=>index===0||value>coverage[index-1]));
+  assert.deepEqual(coverage,[0.97,0.9,0.8,0.65,0.5]);
+  assert.ok(coverage.every((value,index)=>index===0||value<coverage[index-1]));
   assert.throws(()=>E.conditionRiskCoverage("extremo"),/nivel de riesgo/);
 });

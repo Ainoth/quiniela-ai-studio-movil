@@ -1,5 +1,12 @@
 # Cambios
 
+## 0.5.7 — escala de riesgo corregida
+
+- Invierte la escala de riesgo para que el nivel mínimo conserve el 97% de la muestra y el muy alto el 50%. A más riesgo, el filtro es más estrecho y aumenta la posibilidad de excluir resultados históricos.
+- Actualiza la descripción y las pruebas de monotonicidad del selector.
+- Verificado con pruebas automatizadas y compilación Android.
+
+
 ## 0.5.6 — niveles de riesgo para Condiciones automáticas
 
 - Añade cinco niveles de riesgo. Cada nivel determina la cobertura de frecuencias históricas que se incluye al calcular cantidades y rachas; los niveles altos admiten valores menos frecuentes.

@@ -261,7 +261,7 @@ function recomputeHistoricalConditions(){
     const coverage=E.conditionRiskCoverage(filters.riskLevel),result=E.historicalConditionFilters(rows,coverage);
     filters.allowedCounts=result.allowedCounts;filters.allowedVariantRuns=result.allowedVariantRuns;
     filters.accountEnabled=true;filters.streakEnabled=true;
-    filters.autoHistoryNote="Riesgo "+filters.riskLevel.replace("-"," ")+": reglas ajustadas a "+Math.round(coverage*100)+"% de cobertura histórica, con "+rows.length.toLocaleString("es-ES")+" jornadas. Más riesgo admite valores menos frecuentes y puede generar más apuestas.";
+    filters.autoHistoryNote="Riesgo "+filters.riskLevel.replace("-"," ")+": se conserva "+Math.round(coverage*100)+"% de los casos históricos por regla, a partir de "+rows.length.toLocaleString("es-ES")+" jornadas. Más riesgo estrecha el filtro y aumenta la posibilidad de excluir resultados.";
     return true;
   }catch(error){filters.autoHistoryNote=error.message;return false;}
 }

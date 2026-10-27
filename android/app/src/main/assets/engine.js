@@ -327,7 +327,9 @@
   }
 
   function conditionRiskCoverage(level="medio") {
-    const levels={"minimo":0.5,"bajo":0.65,"medio":0.8,"alto":0.9,"muy-alto":0.97};
+    // Lower coverage is a narrower historical filter: fewer profiles are kept,
+    // so the chance that a future result falls outside it is higher.
+    const levels={"minimo":0.97,"bajo":0.9,"medio":0.8,"alto":0.65,"muy-alto":0.5};
     if(!Object.hasOwn(levels,level))throw Error("Elige un nivel de riesgo válido.");
     return levels[level];
   }
