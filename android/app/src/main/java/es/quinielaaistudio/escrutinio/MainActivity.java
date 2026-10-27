@@ -41,7 +41,7 @@ public class MainActivity extends Activity {
     private static final int PICK_TXT = 41;
     private static final int SAVE_TXT = 42;
     private static final int MAX_DOWNLOAD = 25 * 1024 * 1024;
-    private static final int MAX_TXT = 2 * 1024 * 1024;
+    private static final int MAX_TXT = 20 * 1024 * 1024;
     private WebView webView;
     private String pendingSaveName;
     private String pendingSaveText;
@@ -174,7 +174,8 @@ public class MainActivity extends Activity {
             runOnUiThread(() -> {
                 Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
-                intent.setType("text/plain");
+                intent.setType("*/*");
+                intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"text/plain", "text/csv", "text/comma-separated-values", "application/json"});
                 startActivityForResult(intent, PICK_TXT);
             });
         }

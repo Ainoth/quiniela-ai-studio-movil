@@ -318,6 +318,7 @@ function scrutinyTicketContext(filename) {
   return match ? { season: match[2], round: +match[1] } : null;
 }
 window.onImportedText = (text, filename) => {
+  if (pendingProbabilityImport) return window.handleProbabilitySourceImported(text, filename);
   if (!state.data || !state.round) return scrutinyStatus("Descarga primero los datos para asociar el TXT a una jornada.", "error");
   const bets = String(text).split(/\r?\n/).map((line) => line.trim().toUpperCase().replace(/\s/g, "")).filter(Boolean);
   if (!bets.length || bets.some((bet) => !/^[1X2]{14}([012M]{2})?$/.test(bet)))

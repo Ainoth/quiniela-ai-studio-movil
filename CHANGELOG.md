@@ -1,5 +1,20 @@
 # Cambios
 
+## 0.4.0 — generación histórica y factor sorpresa
+
+- La generación automática selecciona dobles y triples según los resultados de
+  las temporadas históricas marcadas y el objetivo de cobertura de esa muestra.
+  El límite de columnas es técnico; el importe solo interviene al optimizar en
+  Reducidas.
+- Añade el factor sorpresa: estima el riesgo de fallo del signo favorito como
+  1 menos su probabilidad, ordena los partidos y amplía progresivamente el grupo
+  candidato de 4 a 14. Muestra el porcentaje estimado en cada partido.
+- Mantiene separada la diferenciación del público, basada en Mercado y
+  Popularidad.
+- Incorpora el catálogo de tablas reducidas y el histórico empaquetado para
+  generar sin conexión.
+- Verificado con pruebas automatizadas y compilación Android.
+
 ## 0.3.0 — Base de generación y reducida por presupuesto
 
 - Sustituye los niveles de cobertura fijos por asignación automática según la

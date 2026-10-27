@@ -79,6 +79,51 @@
     });
   }
 
+  function parseProbabilitySource(text, filename, roundKey, matches, sourceKind="custom") {
+    if(String(text).length>20*1024*1024)throw Error("La fuente supera el límite de 20 MiB.");
+    const parseValues=(raw,index)=>{
+      const values=raw.map(v=>Number(String(v??"").trim().replace("%","").replace(",",".")));
+      const sum=values.reduce((a,b)=>a+b,0);
+      if(values.length!==3||values.some(v=>!Number.isFinite(v)||v<0))throw Error("Porcentajes inválidos en el partido "+index+".");
+      if(Math.abs(sum-1)<=1e-6)return values;
+      if(sum>=99&&sum<=101&&values.every(v=>v<=100))return values.map(v=>v/sum);
+      throw Error("Los porcentajes del partido "+index+" no suman 100% ni 1,0.");
+    };
+    let doc, name, captured, kind, rows;
+    const body=String(text).replace(/^\uFEFF/,"").trim();
+    if(body.startsWith("{")){
+      try{doc=JSON.parse(body);}catch(error){throw Error("JSON inválido: "+error.message);}
+      if(doc.schema!=="quiniela_ai_studio.probabilities"||doc.version!==1)throw Error("JSON no compatible: se requiere quiniela_ai_studio.probabilities v1.");
+      if(doc.round_key!==roundKey)throw Error("La fuente es de otra temporada o jornada.");
+      name=String(doc.source||"").trim();captured=String(doc.captured_at||"").trim();kind=String(doc.kind||sourceKind);
+      if(!Array.isArray(doc.matches)||doc.matches.length!==14)throw Error("El JSON debe contener los 14 partidos de 1X2.");
+      rows=doc.matches.map((entry,i)=>{
+        if(entry.number!==i+1||!E_same(entry.home,matches[i].home)||!E_same(entry.away,matches[i].away))throw Error("Los equipos o el orden no coinciden en el partido "+(i+1)+".");
+        return parseValues([entry.p1,entry.px,entry.p2],i+1);
+      });
+    }else{
+      const delim=body.slice(0,4096).includes(";")?";":body.slice(0,4096).includes("\t")?"\t":",";
+      const records=[];let row=[],cell="",quoted=false;
+      for(let i=0;i<body.length;i++){const c=body[i];if(quoted){if(c==='"'&&body[i+1]==='"'){cell+='"';i++;}else if(c==='"')quoted=false;else cell+=c;}else if(c==='"')quoted=true;else if(c===delim){row.push(cell);cell="";}else if(c==="\n"){row.push(cell);records.push(row);row=[];cell="";}else if(c!=="\r")cell+=c;}
+      if(cell||row.length){row.push(cell);records.push(row);}
+      const headers=(records.shift()||[]).map(v=>v.trim().toLowerCase()),idx=Object.fromEntries(headers.map((v,i)=>[v,i]));
+      if(records.length!==14||!["number","home","away","p1","px","p2","source","captured_at"].every(key=>idx[key]!==undefined))throw Error("CSV/TXT requiere 14 filas y columnas number,home,away,p1,px,p2,source,captured_at.");
+      const read=(r,key)=>r[idx[key]]||"";
+      const names=new Set(),dates=new Set(),kinds=new Set();
+      rows=records.map((r,i)=>{
+        if(String(read(r,"number")).trim()!==String(i+1)||!E_same(read(r,"home"),matches[i].home)||!E_same(read(r,"away"),matches[i].away))throw Error("Los equipos o el orden no coinciden en el partido "+(i+1)+".");
+        names.add(String(read(r,"source")).trim());dates.add(String(read(r,"captured_at")).trim());kinds.add(String(read(r,"kind")||sourceKind).trim());
+        return parseValues([read(r,"p1"),read(r,"px"),read(r,"p2")],i+1);
+      });
+      if(names.size!==1||!([...names][0])||dates.size!==1||!([...dates][0])||kinds.size!==1)throw Error("Fuente, fecha y tipo deben ser iguales en todas las filas.");
+      name=[...names][0];captured=[...dates][0];kind=[...kinds][0];
+    }
+    if(!name||!captured||!Number.isFinite(Date.parse(captured))||!captured.match(/[+-]\d\d:?\d\d|Z$/i))throw Error("La fuente debe incluir nombre y fecha ISO con zona horaria.");
+    if(!["classification","form5","history","market","public","custom"].includes(kind))throw Error("Tipo de fuente local no reconocido.");
+    return {source:name,capturedAt:captured,kind,values:validateProbabilities(rows),filename:String(filename||"")};
+  }
+  function E_same(a,b){return normalizeTeam(a)===normalizeTeam(b);}
+
   function coverageBase(probabilities, level) {
     const rows = validateProbabilities(probabilities);
     if (!Number.isInteger(level) || level < 0 || level > 10) throw Error("El nivel de cobertura va de 0 a 10.");
@@ -93,32 +138,148 @@
       .map((signIndex) => SIGNS[signIndex]).join(""));
   }
 
-  function configuredBase(probabilities, doubles, triples, maxColumns) {
+  function configuredBase(probabilities, doubles, triples, maxColumns, locks = Array(14).fill(false), lockedBase = Array(14).fill("1")) {
     const rows = validateProbabilities(probabilities);
     doubles = Math.max(0, Math.min(14, Math.trunc(doubles)));
     triples = Math.max(0, Math.min(14 - doubles, Math.trunc(triples)));
+    if (!Array.isArray(locks)||locks.length!==14||locks.some(x=>typeof x!=="boolean"))throw Error("Se requieren 14 estados de bloqueo válidos.");
+    const previous=normalizeBase(lockedBase),fixedT=locks.filter((locked,i)=>locked&&previous[i].length===3).length,fixedD=locks.filter((locked,i)=>locked&&previous[i].length===2).length;
+    if(fixedT>triples||fixedD>doubles)throw Error("Los bloqueos ya incluyen más triples o dobles que los solicitados.");
     if (2 ** doubles * 3 ** triples > maxColumns) throw Error("La cantidad elegida supera el máximo de columnas.");
     const ranks = rows.map((row) => [0, 1, 2].sort((a, b) => row[b] - row[a] || a - b));
-    const positions = rows.map((row, index) => ({ index, strength: Math.max(...row) }))
-      .sort((a, b) => a.strength - b.strength || a.index - b.index);
-    const widths = Array(14).fill(1);
-    positions.slice(0, triples).forEach(({ index }) => widths[index] = 3);
-    positions.slice(triples, triples + doubles).forEach(({ index }) => widths[index] = 2);
-    return ranks.map((rank, index) => rank.slice(0, widths[index]).sort((a, b) => a - b).map((n) => SIGNS[n]).join(""));
+    let states = new Map([["0,0", { score: 0, widths: [] }]]),needD=doubles-fixedD,needT=triples-fixedT;
+    rows.forEach((row, i) => {
+      if(locks[i])return;
+      const next = new Map();
+      for (const [key, path] of states) {
+        const [usedT, usedD] = key.split(",").map(Number);
+        for (const width of [1, 2, 3]) {
+          const t = usedT + (width === 3 ? 1 : 0), d = usedD + (width === 2 ? 1 : 0);
+          if (t > needT || d > needD) continue;
+          const mass = ranks[i].slice(0, width).reduce((sum, sign) => sum + row[sign], 0);
+          const candidate = { score: path.score + mass, widths: [...path.widths, width] }, target = t + "," + d, old = next.get(target);
+          if (!old || candidate.score > old.score + 1e-15) next.set(target, candidate);
+        }
+      }
+      states = next;
+    });
+    const best = states.get(needT + "," + needD);
+    if (!best) throw Error("No se encontró una asignación compatible con las cantidades.");
+    let cursor=0;
+    return ranks.map((rank,i)=>locks[i]?previous[i]:rank.slice(0,best.widths[cursor++]).map(n=>SIGNS[n]).join(""));
   }
 
-  function automaticBase(probabilities, maxColumns) {
-    let best = null;
-    for (let triples = 0; triples <= 14; triples++) for (let doubles = 0; doubles + triples <= 14; doubles++) {
-      if (2 ** doubles * 3 ** triples > maxColumns) continue;
-      const base = configuredBase(probabilities, doubles, triples, maxColumns);
-      const rows = validateProbabilities(probabilities);
-      const score = base.reduce((sum, signs, i) => sum + signs.split("").reduce((n, sign) => n + rows[i][SIGNS.indexOf(sign)] / 100, 0), 0);
-      if (!best || score > best.score || (score === best.score && base.reduce((n, x) => n * x.length, 1) < best.columns))
-        best = { base, score, doubles, triples, columns: base.reduce((n, x) => n * x.length, 1) };
+  function automaticBase(probabilities, maxColumns, locks = Array(14).fill(false), lockedBase = Array(14).fill("1")) {
+    const rows=validateProbabilities(probabilities);
+    if(!Number.isInteger(maxColumns)||maxColumns<1)throw Error("El máximo debe ser al menos una columna.");
+    if(!Array.isArray(locks)||locks.length!==14||locks.some(x=>typeof x!=="boolean"))throw Error("Se requieren 14 estados de bloqueo válidos.");
+    const previous=normalizeBase(lockedBase);
+    const orders=rows.map(row=>[0,1,2].sort((a,b)=>row[b]-row[a]||a-b));
+    let states=new Map([[1,{score:0,widths:[]}]]);
+    rows.forEach((row,i)=>{
+      if(locks[i]){const signs=previous[i],mass=[...signs].reduce((n,s)=>n+row[SIGNS.indexOf(s)],0),width=signs.length;const next=new Map();for(const [columns,path] of states){const size=columns*width;if(size<=maxColumns){const candidate={score:path.score+Math.log(Math.max(mass,1e-300)),widths:[...path.widths,width]},old=next.get(size);if(!old||candidate.score>old.score+1e-15)next.set(size,candidate);}}states=next;return;}
+      const next=new Map();
+      for(const [columns,path] of states)for(const width of [1,2,3]){
+        const size=columns*width;if(size>maxColumns)continue;
+        const mass=orders[i].slice(0,width).reduce((n,sign)=>n+row[sign],0);
+        const candidate={score:path.score+Math.log(Math.max(mass,1e-300)),widths:[...path.widths,width]},old=next.get(size);
+        if(!old||candidate.score>old.score+1e-15||(Math.abs(candidate.score-old.score)<=1e-15&&candidate.widths.join("")<old.widths.join("")))next.set(size,candidate);
+      }
+      states=next;
+    });
+    if(!states.size)throw Error("El máximo de columnas no permite crear una base.");
+    const [columns,best]=[...states].sort((a,b)=>b[1].score-a[1].score||a[0]-b[0]||a[1].widths.join("").localeCompare(b[1].widths.join("")))[0];
+    const base=rows.map((_,i)=>locks[i]?previous[i]:orders[i].slice(0,best.widths[i]).map(n=>SIGNS[n]).join(""));
+    return {base,doubles:best.widths.filter(x=>x===2).length,triples:best.widths.filter(x=>x===3).length,columns,score:best.score};
+  }
+
+  function weightedProbabilities(sources) {
+    const active=sources.filter(item=>Number(item.weight)>0);
+    if(!active.length)throw Error("Asigna un peso positivo a alguna fuente auxiliar.");
+    const rows=active.map(item=>validateProbabilities(item.values)),total=active.reduce((n,item)=>n+Number(item.weight),0);
+    return Array.from({length:14},(_,i)=>[0,1,2].map(s=>active.reduce((n,item,j)=>n+rows[j][i][s]*Number(item.weight),0)/total));
+  }
+
+  function differentiateProbabilities(sport, publicRows, level) {
+    const p=validateProbabilities(sport),q=validateProbabilities(publicRows);
+    if(!Number.isInteger(level)||level<0||level>10)throw Error("La diferenciación debe estar entre 0 y 10.");
+    if(level===0)return p;
+    const alpha=level/10;
+    return p.map((row,i)=>{
+      const logs=row.map((value,j)=>value>0?Math.log(value)-alpha*Math.log(Math.max(q[i][j],1e-6)):-Infinity),peak=Math.max(...logs),raw=logs.map(x=>Math.exp(x-peak)),total=raw.reduce((a,b)=>a+b,0);
+      return raw.map(x=>x/total);
+    });
+  }
+
+  // Sort matches by the estimated chance that the most likely sign fails.
+  function surpriseOrder(probabilities) {
+    return validateProbabilities(probabilities).map((row,index)=>({index,risk:1-Math.max(...row)}))
+      .sort((a,b)=>b.risk-a.risk||a.index-b.index);
+  }
+  function surpriseEligiblePositions(probabilities, level=0) {
+    if(!Number.isInteger(level)||level<0||level>10)throw Error("El factor sorpresa debe estar entre 0 y 10.");
+    return surpriseOrder(probabilities).slice(0,Math.min(14,4+level)).map(item=>item.index);
+  }
+
+  function reducedTemplate(probabilities, table, selectedPositions = null) {
+    const rows=validateProbabilities(probabilities),triples=table.widths.filter(w=>w===3).length,doubles=table.widths.filter(w=>w===2).length;
+    const uncertainty=rows.map((row,index)=>({index,max:Math.max(...row)})).sort((a,b)=>a.max-b.max||a.index-b.index);
+    const chosen=selectedPositions===null?uncertainty.slice(0,triples+doubles).map(x=>x.index):[...selectedPositions];
+    if(chosen.length!==triples+doubles||new Set(chosen).size!==chosen.length)throw Error("Selecciona exactamente "+(triples+doubles)+" partidos para esta reducida.");
+    if(chosen.some(i=>!Number.isInteger(i)||i<0||i>13))throw Error("Posición de partido inválida.");
+    const ranked=rows.map(row=>[0,1,2].sort((a,b)=>row[b]-row[a]||a-b));
+    const sortedChosen=chosen.map(i=>({index:i,max:Math.max(...rows[i])})).sort((a,b)=>a.max-b.max||a.index-b.index);
+    const triplePositions=sortedChosen.slice(0,triples).map(x=>x.index).sort((a,b)=>a-b);
+    const doublePositions=sortedChosen.slice(triples).map(x=>x.index).sort((a,b)=>a-b);
+    const groups={3:triplePositions.slice(),2:doublePositions.slice()},positions=[];
+    const base=rows.map((_,i)=>ranked[i].slice(0,1).sort((a,b)=>a-b).map(n=>SIGNS[n]).join(""));
+    for(const width of table.widths){const i=groups[width].shift();positions.push(i);base[i]=ranked[i].slice(0,width).sort((a,b)=>a-b).map(n=>SIGNS[n]).join("");}
+    return {base,positions,selectedPositions:chosen};
+  }
+
+  function historicalBase(probabilities, history, targetCoverage=0.7, columnLimit=MAX_GENERATED, locks=Array(14).fill(false), lockedBase=Array(14).fill("1"), eligiblePositions=null) {
+    const rows=validateProbabilities(probabilities);
+    if(!Array.isArray(history)||!history.length||history.some(result=>typeof result!=="string"||!/^([1X2]{14})$/.test(result)))throw Error("Selecciona temporadas con resultados históricos válidos.");
+    if(!Number.isFinite(targetCoverage)||targetCoverage<=0||targetCoverage>1)throw Error("La cobertura histórica objetivo debe estar entre 1% y 100%.");
+    if(!Array.isArray(locks)||locks.length!==14||locks.some(x=>typeof x!=="boolean"))throw Error("Se requieren 14 estados de bloqueo válidos.");
+    const previous=normalizeBase(lockedBase);
+    const eligible=new Set(eligiblePositions===null?Array.from({length:14},(_,i)=>i):eligiblePositions);
+    const ranks=rows.map(row=>[0,1,2].sort((a,b)=>row[b]-row[a]||a-b));
+    let base=ranks.map((rank,i)=>locks[i]?previous[i]:SIGNS[rank[0]]),widths=base.map(row=>row.length),columns=widths.reduce((n,w)=>n*w,1);
+    if(columns>columnLimit)throw Error("Los partidos bloqueados superan el límite técnico de columnas.");
+    const measure=signs=>{let covered=0;for(const result of history){let ok=true;for(let i=0;i<14;i++)if(!signs[i].includes(result[i])){ok=false;break;}if(ok)covered++;}return covered;};
+    // A small soft score lets the greedy search progress through bases where
+    // no single added sign immediately covers a complete historical row.
+    const potential=signs=>history.reduce((sum,result)=>sum+signs.reduce((weight,row,i)=>weight*(row.includes(result[i])?1:0.1),1),0);
+    let covered=measure(base),score=potential(base);
+    while(covered/history.length+1e-12<targetCoverage){
+      let choice=null;
+      for(let i=0;i<14;i++){
+        const width=widths[i];if(locks[i]||!eligible.has(i)||width>=3)continue;
+        const nextColumns=columns*(width+1)/width;if(nextColumns>columnLimit)continue;
+        const candidate=base.slice(),added=SIGNS[ranks[i][width]];candidate[i]=SIGNS.filter(s=>candidate[i].includes(s)||s===added).join("");
+        const candidateCovered=measure(candidate),candidateScore=potential(candidate),gain=candidateScore-score,cost=nextColumns-columns;
+        const ratio=gain/cost;
+        if(!choice||ratio>choice.ratio+1e-15||(Math.abs(ratio-choice.ratio)<=1e-15&&(gain>choice.gain||(gain===choice.gain&&i<choice.index))))choice={index:i,ratio,gain,covered:candidateCovered,score:candidateScore,base:candidate,columns:nextColumns};
+      }
+      if(!choice||choice.gain<=0)break;
+      base=choice.base;widths[choice.index]++;columns=choice.columns;covered=choice.covered;score=choice.score;
     }
-    if (!best) throw Error("El máximo de columnas no permite crear una base.");
-    return best;
+    return {base,doubles:widths.filter(w=>w===2).length,triples:widths.filter(w=>w===3).length,fixed:widths.filter(w=>w===1).length,columns,historicalCoverage:covered/history.length,historyRows:history.length,targetCoverage,targetReached:covered/history.length+1e-12>=targetCoverage};
+  }
+
+  function reduceByTable(base, goals, table, positions) {
+    const normalized=normalizeBase(base),masks=goals.map(g=>[...new Set(String(g))]);
+    if(table.widths.length!==table.patterns[0]?.length||positions.length!==table.widths.length||new Set(positions).size!==positions.length)throw Error("Las posiciones no coinciden con la tabla elegida.");
+    positions.forEach((index,j)=>{if(!Number.isInteger(index)||index<0||index>13||normalized[index].length!==table.widths[j])throw Error("Elige posiciones con las anchuras requeridas por esta reducida.");});
+    const other=Array.from({length:14},(_,i)=>i).filter(i=>!positions.includes(i)),bets=[];
+    for(const pattern of table.patterns){
+      const column=Array(14).fill("");
+      positions.forEach((index,j)=>{column[index]=normalized[index][pattern[j]];});
+      for(const i of other){if(normalized[i].length!==1)throw Error("La base de la reducida exige fijos fuera de las posiciones de la tabla.");column[i]=normalized[i];}
+      for(const home of masks[0])for(const away of masks[1])bets.push(column.join("")+home+away);
+    }
+    return bets;
   }
 
   function coverageCounts(level) {
@@ -319,7 +480,7 @@
 
   root.EscrutinioEngine = { roundLine, parseKickoff, formatKickoff, parseDates, parseHours, parseNames,
     normalizeTeam, sameTeamName,
-    normalizeBase, validateProbabilities, coverageBase, configuredBase, automaticBase, coverageCounts, baseSize, satisfiesFilters,
+    normalizeBase, validateProbabilities, parseProbabilitySource, coverageBase, configuredBase, automaticBase, historicalBase, weightedProbabilities, differentiateProbabilities, surpriseOrder, surpriseEligiblePositions, reducedTemplate, reduceByTable, coverageCounts, baseSize, satisfiesFilters,
     generateBets, probabilityMass, MAX_GENERATED,
     availableRounds, currentRound, scrutiny, live, evaluate, categoryPossibilities, awardBreakdown };
   if (typeof module !== "undefined") module.exports = root.EscrutinioEngine;
