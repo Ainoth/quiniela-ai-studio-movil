@@ -1,5 +1,20 @@
 # Cambios
 
+## 0.5.2 — sorpresa independiente y condiciones por valor
+
+- Separa el factor sorpresa de la diferenciación del público. El modo automático
+  determina las cantidades de dobles y triples únicamente con el histórico
+  seleccionado y los porcentajes activos; el factor sorpresa solo cambia sus
+  posiciones.
+- El botón del Pleno alterna entre pronóstico automático y selección manual.
+- Condiciones permite activar y desactivar cantidades exactas de 1, X, 2 y
+  variantes, además de longitudes concretas de racha.
+- En Mis sistemas, los botones vuelven a ser pequeños y se alinean a la derecha.
+  En Escrutinio, recuperan el ancho completo con texto legible y menos altura.
+- Añade migración de los filtros guardados y pruebas de cantidades, rachas y
+  conservación de dobles/triples al aplicar sorpresa.
+
+
 ## 0.5.1 — Pleno automático y controles legibles
 
 - El Pleno se completa automáticamente con el resultado más probable de cada

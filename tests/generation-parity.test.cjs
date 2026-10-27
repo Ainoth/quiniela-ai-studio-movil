@@ -115,3 +115,25 @@ test("all six official reductions reproduce their table widths and column counts
     for(const outcome of universe){const best=Math.max(...bets.map(b=>[...outcome].reduce((n,s,i)=>n+(s===b[i]),0)));assert.ok(best>=table.minimumHits,`tabla ${table.number} asegura ${best}, requiere ${table.minimumHits}`);}
   }
 });
+
+
+test("surprise changes double/triple placement without changing their counts", () => {
+  const base=Array.from({length:14},(_,i)=>i<3?"1X":i<5?"1X2":"1");
+  const locks=Array(14).fill(false);
+  const zero=E.applySurprise(base,probabilities,0,locks,base);
+  const high=E.applySurprise(base,probabilities,10,locks,base);
+  for(const result of [zero,high]){
+    assert.equal(result.doubles,3);assert.equal(result.triples,2);
+    assert.equal(result.columns,3**2*2**3);
+  }
+  assert.notDeepEqual(zero.base,high.base);
+});
+
+test("condition filters accept independent exact sign counts and run lengths", () => {
+  const filters={accountEnabled:true,allowedCounts:{"1":Array(15).fill(false),X:Array(15).fill(true),"2":Array(15).fill(true),V:Array(15).fill(true)},streakEnabled:true,allowedVariantRuns:Array(15).fill(false)};
+  filters.allowedCounts["1"][2]=true;filters.allowedVariantRuns[12]=true;
+  assert.equal(E.satisfiesFilters("11XXXXXXXXXXXX",filters),true);
+  assert.equal(E.satisfiesFilters("111XXXXXXXXXXX",filters),false);
+  filters.allowedVariantRuns[13]=true;filters.allowedCounts["1"][1]=true;
+  assert.equal(E.satisfiesFilters("1XXXXXXXXXXXXX",filters),true);
+});

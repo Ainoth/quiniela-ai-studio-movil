@@ -40,7 +40,7 @@
           </div>
           <label id="localSourceRow" class="field-label local-source-row" hidden>Fuentes importadas<select id="localSourceSelect" onchange="selectSource(this.value)"></select></label>
           <p id="sourceNote" class="help-text">Mercado estima probabilidades deportivas; Popularidad muestra signos jugados. No son equivalentes ni predicen aciertos.</p>
-          <label class="field-label" for="strategyLevel">Sorpresa y diferenciación <output id="strategyLevelValue">0/10 · 4 partidos</output></label><input id="strategyLevel" type="range" min="0" max="10" step="1" value="0" oninput="setStrategyLevel(this.value)"><p class="help-text">Al subir, combina dos efectos: prioriza signos menos populares al ajustar Mercado y amplía de 4 a 14 los partidos candidatos para dobles/triples, empezando por aquellos donde es más probable que falle el favorito. Si faltan Mercado o Popularidad, solo se aplica el orden de riesgo con la fuente disponible.</p>
+          <label class="field-label" for="surpriseLevel">Factor sorpresa <output id="surpriseLevelValue">0/10 · 4 partidos</output></label><input id="surpriseLevel" type="range" min="0" max="10" step="1" value="0" oninput="setSurpriseLevel(this.value)"><p class="help-text">Ordena dónde colocar los dobles y triples según el riesgo de que falle el favorito. No cambia cuántos hay: en automático, las cantidades dependen solo del histórico seleccionado y los porcentajes de esta jornada.</p>
           <details class="advanced-source"><summary>Editar matriz y combinar fuentes auxiliares</summary>
             <div class="button-row"><button class="outline" onclick="copySelectedToMatrix()">Copiar fuente seleccionada</button><button class="outline" onclick="normalizeMatrix()">Normalizar filas</button><button class="outline" onclick="saveMatrix()">Guardar %</button><button class="outline" onclick="loadMatrix()">Cargar %</button></div>
             <div id="matrixEditor" class="matrix-editor"></div>
@@ -66,7 +66,7 @@
         </section>
 
         <section class="card pleno-card">
-          <div class="section-title"><div><span class="eyebrow">PLENO AL 15</span><h2>Goles de cada equipo</h2></div><div class="pleno-actions"><span id="plenoCount" class="progress-pill">1 pareja</span><button id="autoPlenoButton" class="outline" onclick="autoSelectPleno()">✓ Automático</button></div></div>
+          <div class="section-title"><div><span class="eyebrow">PLENO AL 15</span><h2>Goles de cada equipo</h2></div><div class="pleno-actions"><span id="plenoCount" class="progress-pill">1 pareja</span><button id="autoPlenoButton" class="outline" onclick="togglePlenoMode()">Pasar a manual</button></div></div>
           <p id="plenoModeNote" class="help-text">Selección automática según el mercado o el historial.</p>
           <div id="plenoChoices" class="pleno-grid"></div>
           <p class="help-text">M equivale a 3 o más goles. Cada selección combina los dos equipos y multiplica las apuestas.</p>
@@ -94,18 +94,12 @@
         <p class="intro">Estas reglas se aplican al generar. Desactivarlas conserva sus valores.</p>
         <section class="card condition-card">
           <div class="section-title"><div><span class="eyebrow">CUENTA</span><h2>Cuántos signos</h2></div><label class="switch-label">Aplicar<input id="accountEnabled" type="checkbox" onchange="updateFilters()"></label></div>
-          <div class="condition-counts"><div class="condition-count-head"><span>Signo</span><span>Mínimo</span><span>Máximo</span></div>
-            <div class="condition-count-row"><b class="condition-sign sign-1">1</b><input id="min1" aria-label="Mínimo de signos 1" type="number" min="0" max="14" onchange="updateFilters()"><input id="max1" aria-label="Máximo de signos 1" type="number" min="0" max="14" onchange="updateFilters()"></div>
-            <div class="condition-count-row"><b class="condition-sign sign-x">X</b><input id="minX" aria-label="Mínimo de empates" type="number" min="0" max="14" onchange="updateFilters()"><input id="maxX" aria-label="Máximo de empates" type="number" min="0" max="14" onchange="updateFilters()"></div>
-            <div class="condition-count-row"><b class="condition-sign sign-2">2</b><input id="min2" aria-label="Mínimo de signos 2" type="number" min="0" max="14" onchange="updateFilters()"><input id="max2" aria-label="Máximo de signos 2" type="number" min="0" max="14" onchange="updateFilters()"></div>
-            <div class="condition-count-row"><b class="condition-sign sign-v">V</b><input id="minV" aria-label="Mínimo de variantes" type="number" min="0" max="14" onchange="updateFilters()"><input id="maxV" aria-label="Máximo de variantes" type="number" min="0" max="14" onchange="updateFilters()"></div>
-          </div>
+          <div id="conditionCounts" class="condition-counts"></div>
           <p class="help-text">V agrupa X y 2 como variantes. Los mínimos y máximos se comprueban sobre los 14 partidos.</p>
         </section>
         <section class="card condition-card">
           <div class="section-title"><div><span class="eyebrow">RACHAS</span><h2>Variantes seguidas</h2></div><label class="switch-label">Aplicar<input id="streakEnabled" type="checkbox" onchange="updateFilters()"></label></div>
-          <label class="field-label" for="maxVariantRun">Máxima racha de X/2</label>
-          <div class="range-row"><input id="maxVariantRun" type="range" min="1" max="14" value="14" oninput="updateStreakValue()"><output id="maxVariantRunValue">14</output></div>
+          <p class="help-text">Activa las longitudes de racha permitidas:</p><div id="variantRunChoices" class="condition-counts"></div>
           <p class="help-text">Una X o un 2 cuentan como variante; el Pleno queda fuera de esta condición.</p>
         </section>
         <section class="card condition-summary"><strong id="filterStatus">Filtros desactivados</strong><span id="filterEffect">Activa una condición para usarla en el siguiente desarrollo.</span></section>

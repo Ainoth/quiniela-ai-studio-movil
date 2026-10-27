@@ -37,9 +37,12 @@ test("la generación automática muestra sus temporadas y bloquea dobles/triples
   assert.match(app, /doubleCount"\)\.disabled = generation\.mode !== "manual"/);
 });
 
-test("un único control combina sorpresa y diferenciación y Pleno muestra los equipos", () => {
-  assert.match(html, /id="strategyLevel"/);
-  assert.doesNotMatch(html, /id="differenceLevel"|id="surpriseLevel"/);
+test("factor sorpresa es independiente de las cantidades automáticas y Pleno permite cambiar de modo", () => {
+  assert.match(html, /id="surpriseLevel"/);
+  assert.doesNotMatch(html, /diferenciación del público|id="strategyLevel"/);
+  assert.match(app, /historicalBase\(probabilities,history,generation\.historicalTarget,technicalColumnLimit\(\),round\.locks,round\.base\)/);
+  assert.match(app, /function togglePlenoMode\(\)/);
+  assert.match(html, /onclick="togglePlenoMode\(\)"/);
   assert.match(app, /const pleno=fixture\(\)\[14\]/);
 });
 
@@ -58,7 +61,9 @@ test("el Pleno tiene selección automática de mercado o frecuencias históricas
 });
 
 test("Condiciones muestra filas visuales y botones compactos mantienen tamaño de texto legible", () => {
-  assert.match(html, /class="condition-count-row"/);
+  assert.match(html, /id="conditionCounts"/);
+  assert.match(html, /id="variantRunChoices"/);
+  assert.match(app, /function toggleConditionValue/);
   assert.match(style, /\.scrutiny-actions button[^}]*font-size:11px/);
   assert.match(style, /\.system-actions button[^}]*font-size:11px/);
 });

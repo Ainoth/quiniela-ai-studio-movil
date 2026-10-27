@@ -28,7 +28,7 @@ function newRoundState() {
     reductionTable: 1, reductionPositions: null,
     locks: Array(14).fill(false),
     filters: { accountEnabled: false, minCounts: { "1": 0, X: 0, "2": 0, V: 0 },
-      maxCounts: { "1": 14, X: 14, "2": 14, V: 14 }, streakEnabled: false, maxVariantRun: 14 },
+      maxCounts: { "1": 14, X: 14, "2": 14, V: 14 }, allowedCounts: Object.fromEntries(["1","X","2","V"].map(s=>[s,Array(15).fill(true)])), streakEnabled: false, maxVariantRun: 14, allowedVariantRuns: Array(15).fill(true) },
     bets: [], generatedAt: "", selectedSource: "market",
   };
 }
@@ -47,7 +47,10 @@ function current() {
   if(!Number.isInteger(round.differentiation))round.differentiation=0;
   if(!Number.isInteger(round.surpriseLevel))round.surpriseLevel=0;
   if(!Number.isInteger(round.strategyLevel))round.strategyLevel=Math.max(round.differentiation,round.surpriseLevel);
-  round.differentiation=round.strategyLevel;round.surpriseLevel=round.strategyLevel;
+  if (!Number.isInteger(round.surpriseLevel)) round.surpriseLevel=Number.isInteger(round.strategyLevel)?round.strategyLevel:0;
+  if(!round.filters)round.filters=newRoundState().filters;
+  for(const sign of ["1","X","2","V"])if(!Array.isArray(round.filters.allowedCounts?.[sign]))round.filters.allowedCounts={...(round.filters.allowedCounts||{}),[sign]:Array.from({length:15},(_,n)=>n>=Number(round.filters.minCounts?.[sign]??0)&&n<=Number(round.filters.maxCounts?.[sign]??14))};
+  if(!Array.isArray(round.filters.allowedVariantRuns))round.filters.allowedVariantRuns=Array.from({length:15},(_,n)=>n<=Number(round.filters.maxVariantRun??14));
   return round;
 }
 function save() {
@@ -163,13 +166,7 @@ function selectedProbabilities() {
   if(source.startsWith("local:"))return state.percentages[roundKey()]?.localSources?.[source.slice(6)]?.values||null;
   return state.percentages[roundKey()]?.[source] || null;
 }
-function effectiveProbabilities(){
-  const level=current().strategyLevel||0;
-  if(!level)return selectedProbabilities();
-  const data=state.percentages[roundKey()]||{};
-  if(!data.market||!data.public)return selectedProbabilities();
-  return E.differentiateProbabilities(data.market,data.public,level);
-}
+function effectiveProbabilities(){ return selectedProbabilities(); }
 function renderMatrixEditor() {
   const round=current(), values=round.manualMatrix||selectedProbabilities();
   const matches=fixture();
@@ -228,10 +225,10 @@ function renderCoverageLevels() {
   try{probabilities=effectiveProbabilities()||historyProbabilities(history);}catch(_){summary=" · faltan Mercado y Popularidad";}
   byId("historicalTarget").value=Math.round(generation.historicalTarget*100);
   byId("historicalTargetValue").textContent=Math.round(generation.historicalTarget*100)+"%";
-  byId("strategyLevel").value=round.strategyLevel;
-  byId("strategyLevelValue").textContent=round.strategyLevel+"/10 · "+Math.min(14,4+round.strategyLevel)+" partidos";
+  byId("surpriseLevel").value=round.surpriseLevel;
+  byId("surpriseLevelValue").textContent=round.surpriseLevel+"/10 · "+Math.min(14,4+round.surpriseLevel)+" partidos";
   if(generation.mode==="automatic"&&probabilities&&history.length){
-    try{const eligible=E.surpriseEligiblePositions(surpriseProbabilityRows()||probabilities,round.surpriseLevel);const choice=E.historicalBase(probabilities,history,generation.historicalTarget,technicalColumnLimit(),round.locks,round.base,eligible);counts={fixed:choice.fixed,doubles:choice.doubles,triples:choice.triples};generation.doubles=choice.doubles;generation.triples=choice.triples;summary=" · "+choice.columns.toLocaleString("es-ES")+" col. · "+Math.round(choice.historicalCoverage*100)+"% hist.";}catch(_){summary=" · revisa el histórico";}
+    try{const choice=E.historicalBase(probabilities,history,generation.historicalTarget,technicalColumnLimit(),round.locks,round.base);E.applySurprise(choice.base,surpriseProbabilityRows()||probabilities,round.surpriseLevel,round.locks,round.base);counts={fixed:choice.fixed,doubles:choice.doubles,triples:choice.triples};generation.doubles=choice.doubles;generation.triples=choice.triples;summary=" · "+choice.columns.toLocaleString("es-ES")+" col. · "+Math.round(choice.historicalCoverage*100)+"% hist.";}catch(_){summary=" · revisa el histórico";}
   }
   if(generation.mode==="automatic"){byId("doubleCount").value=counts.doubles;byId("tripleCount").value=counts.triples;}
   byId("coverageCaption").textContent = counts.fixed + " fijos · " + counts.doubles + " dobles · " + counts.triples + " triples"+summary;
@@ -246,7 +243,7 @@ function historyProbabilities(results=selectedHistoryRows()){if(!results.length)
 function historyPlenoProbabilities(){const selected=new Set(current().historySeasons||[]),rows=Object.entries(HISTORY.pleno||{}).filter(([season])=>selected.has(season)).flatMap(([,values])=>values);if(!rows.length)return null;return [0,1].map(side=>[..."012M"].map(goal=>rows.filter(row=>row[side]===goal).length/rows.length));}
 function plenoProbabilitySource(){const data=state.percentages[roundKey()]||{};if(data.marketPleno)return {values:data.marketPleno,label:"Mercado"};if(data.publicPleno)return {values:data.publicPleno,label:"Popularidad"};const historical=historyPlenoProbabilities();return historical?{values:historical,label:"historial de temporadas seleccionadas"}:null;}
 function automaticPlenoGoals(){const source=plenoProbabilitySource();return source?{goals:E.automaticPleno(source.values),label:source.label}:null;}
-function surpriseProbabilityRows(){const data=state.percentages[roundKey()]||{};try{if(data.market)return effectiveProbabilities()||data.market;if(current().selectedSource==="public")return historyProbabilities();return effectiveProbabilities()||historyProbabilities();}catch(_){return data.market||historyProbabilities();}}
+function surpriseProbabilityRows(){const data=state.percentages[roundKey()]||{};return data.market||historyProbabilities()||selectedProbabilities();}
 function renderHistoryControls(){
   const round=current(),selected=new Set(round.historySeasons||[]),seasons=(HISTORY.seasons||[]).slice().reverse();
   byId("historySeasons").innerHTML=seasons.map(season=>'<label class="history-season"><input type="checkbox" '+(selected.has(season)?"checked":"")+' onchange="setHistorySeason(\''+season+'\',this.checked)"><span>'+escapeHtml(season)+" · "+(HISTORY.results[season]?.length||0)+" jornadas</span></label>").join("");
@@ -255,7 +252,7 @@ function renderHistoryControls(){
 function setHistorySeason(season,checked){const selected=new Set(current().historySeasons||[]);checked?selected.add(season):selected.delete(season);current().historySeasons=HISTORY.seasons.filter(x=>selected.has(x));save();renderAll();}
 function selectAllHistory(checked){current().historySeasons=checked?HISTORY.seasons.slice():[];save();renderAll();}
 function setHistoricalTarget(value){current().generation.historicalTarget=Number(value)/100;save();renderCoverageLevels();}
-function setStrategyLevel(value){const level=Math.max(0,Math.min(10,Number(value)||0)),round=current();round.strategyLevel=level;round.differentiation=level;round.surpriseLevel=level;save();renderCoverageLevels();renderFixtures();}
+function setSurpriseLevel(value){current().surpriseLevel=Math.max(0,Math.min(10,Number(value)||0));save();renderCoverageLevels();renderFixtures();}
 function baseSize() {
   return E.baseSize(current().base, current().goals);
 }
@@ -293,7 +290,7 @@ function renderGoals() {
       '<button class="' + (goals[side].includes(goal) ? "selected" : "") + '" onclick="toggleGoal(' + side + ',\'' + goal + '\')" ' + (!isEditable() ? "disabled" : "") + ">" + goal + "</button>",
     ).join("") + "</div></div>",
   ).join("");
-  const source=automaticPlenoGoals();byId("autoPlenoButton").textContent=round.plenoMode==="automatic"?"✓ Automático":"Automático";byId("autoPlenoButton").disabled=!isEditable()||!source;byId("plenoModeNote").textContent=round.plenoMode==="automatic"?(source?"Pleno generado por "+source.label+". Puedes cambiarlo tocando los goles.":"Sin datos suficientes: elige goles manualmente."):"Selección manual. Pulsa Automático para usar el pronóstico.";
+  const source=automaticPlenoGoals();byId("autoPlenoButton").textContent=round.plenoMode==="automatic"?"Pasar a manual":"Generar automático";byId("autoPlenoButton").disabled=!isEditable()||(round.plenoMode!=="automatic"&&!source);byId("plenoModeNote").textContent=round.plenoMode==="automatic"?(source?"Automático según "+source.label+". Pulsa el botón para desactivarlo y editar.":"Sin datos suficientes: elige goles manualmente."):"Manual. Pulsa el botón para recalcular automáticamente.";
   const count = countPairs();
   byId("plenoCount").textContent = count + (count === 1 ? " pareja" : " parejas");
 }
@@ -347,38 +344,16 @@ function setTab(section) {
 }
 document.querySelectorAll(".nav-button").forEach((button) => button.addEventListener("click", () => setTab(button.dataset.page)));
 function renderFilters() {
-  const filters = current().filters;
-  byId("accountEnabled").checked = filters.accountEnabled;
-  byId("streakEnabled").checked = filters.streakEnabled;
-  for (const sign of ["1", "X", "2", "V"]) {
-    const key = sign === "1" ? "1" : sign;
-    byId("min" + key).value = filters.minCounts[key];
-    byId("max" + key).value = filters.maxCounts[key];
-  }
-  byId("maxVariantRun").value = filters.maxVariantRun;
-  byId("maxVariantRunValue").value = filters.maxVariantRun;
-  const active = filters.accountEnabled || filters.streakEnabled;
-  byId("filterStatus").textContent = active ? "Condiciones activas al generar" : "Filtros desactivados";
-  byId("filterEffect").textContent = active
-    ? "El filtro puede reducir el número final de apuestas. El resultado aparece después de generar."
-    : "Los valores se conservan. Activa una condición para usarla en el próximo desarrollo.";
+  const filters=current().filters;byId("accountEnabled").checked=filters.accountEnabled;byId("streakEnabled").checked=filters.streakEnabled;
+  const signs=[["1","1","sign-1"],["X","X","sign-x"],["2","2","sign-2"],["V","V","sign-v"]];
+  const tile=(allowed,label,kind,key,value)=>`<button class="condition-tile ${allowed?"on":"off"}" aria-label="${label}" aria-pressed="${allowed}" onclick="toggleConditionValue('${kind}','${key}',${value})">${value}</button>`;
+  byId("conditionCounts").innerHTML=signs.map(([key,label,cls])=>`<div class="condition-count-row"><b class="condition-sign ${cls}">${label}</b>${tile(filters.allowedCounts[key][0],label+": 0 signos","count",key,0)}${Array.from({length:14},(_,i)=>tile(filters.allowedCounts[key][i+1],label+": "+(i+1)+" signos","count",key,i+1)).join("")}</div>`).join("");
+  byId("variantRunChoices").innerHTML=`<div class="condition-count-row"><b class="condition-sign sign-v">R</b>${tile(filters.allowedVariantRuns[0],"Racha de variantes: 0","run","",0)}${Array.from({length:14},(_,i)=>tile(filters.allowedVariantRuns[i+1],"Racha de variantes: "+(i+1),"run","",i+1)).join("")}</div>`;
+  const active=filters.accountEnabled||filters.streakEnabled;byId("filterStatus").textContent=active?"Condiciones activas al generar":"Filtros desactivados";byId("filterEffect").textContent=active?"El filtro puede reducir el número de apuestas generado.":"Los valores se conservan. Activa una condición para aplicarla.";
 }
-function updateStreakValue() {
-  byId("maxVariantRunValue").value = byId("maxVariantRun").value;
-  updateFilters();
-}
-function updateFilters() {
-  const filters = current().filters;
-  filters.accountEnabled = byId("accountEnabled").checked;
-  filters.streakEnabled = byId("streakEnabled").checked;
-  for (const sign of ["1", "X", "2", "V"]) {
-    filters.minCounts[sign] = Math.max(0, Math.min(14, Number(byId("min" + sign).value || 0)));
-    filters.maxCounts[sign] = Math.max(0, Math.min(14, Number(byId("max" + sign).value || 14)));
-  }
-  filters.maxVariantRun = Math.max(1, Math.min(14, Number(byId("maxVariantRun").value || 14)));
-  save();
-  renderFilters();
-}
+function toggleConditionValue(kind,key,value){const f=current().filters;if(kind==="count")f.allowedCounts[key][value]=!f.allowedCounts[key][value];else f.allowedVariantRuns[value]=!f.allowedVariantRuns[value];save();renderFilters();}
+function updateFilters(){const f=current().filters;f.accountEnabled=byId("accountEnabled").checked;f.streakEnabled=byId("streakEnabled").checked;save();renderFilters();}
+
 function renderAnalysis() {
   const round = current();
   const bets = round.bets || [];
@@ -595,7 +570,7 @@ function fillBase() {
       if(chosen.columns>limit)throw Error("La base manual supera el límite técnico de "+limit.toLocaleString("es-ES")+" columnas con el Pleno seleccionado.");
     }else{
       if(!history.length)throw Error("Selecciona al menos una temporada con resultados para el modo automático.");
-      chosen=E.historicalBase(probabilities,history,generation.historicalTarget,limit,round.locks,round.base,E.surpriseEligiblePositions(surpriseProbabilityRows()||probabilities,round.surpriseLevel));
+      const stats=E.historicalBase(probabilities,history,generation.historicalTarget,limit,round.locks,round.base);chosen=E.applySurprise(stats.base,surpriseProbabilityRows()||probabilities,round.surpriseLevel,round.locks,round.base);chosen.historicalCoverage=stats.historicalCoverage;chosen.columns=stats.columns;
     }
   }
   catch (error) { return setStatus(error.message, "error"); }
@@ -628,7 +603,7 @@ function toggleGoal(side, goal) {
   current().bets = [];
   save(); renderAll();
 }
-function autoSelectPleno(){if(!isEditable())return setStatus("Solo se genera el Pleno de la jornada en curso.","error");const predicted=automaticPlenoGoals();if(!predicted)return setStatus("No hay probabilidades ni resultados históricos de Pleno para automatizar esta selección.","error");current().plenoMode="automatic";current().goals=predicted.goals;save();renderAll();setStatus("Pleno automático seleccionado según "+predicted.label+".","success");}
+function togglePlenoMode(){if(!isEditable())return setStatus("Solo se edita el Pleno de la jornada en curso.","error");const round=current();if(round.plenoMode==="automatic"){round.plenoMode="manual";save();renderAll();setStatus("Modo manual activado. Ahora puedes editar los goles.","success");return;}const predicted=automaticPlenoGoals();if(!predicted)return setStatus("No hay datos de Pleno para automatizar esta selección.","error");round.plenoMode="automatic";round.goals=predicted.goals;save();renderAll();setStatus("Pleno automático según "+predicted.label+".","success");}
 function generateCurrent() {
   if (busy) return;
   if (!isEditable()) return setStatus("Selecciona la jornada en curso para generar apuestas.", "error");
@@ -637,9 +612,6 @@ function generateCurrent() {
     try {
       const round = current();
       const filters = round.filters;
-      for (const sign of ["1", "X", "2", "V"]) {
-        if (filters.minCounts[sign] > filters.maxCounts[sign]) throw Error("El mínimo de " + sign + " supera su máximo.");
-      }
       const bets = E.generateBets(round.base, round.goals, filters, E.MAX_GENERATED);
       if (!bets.length) throw Error("Las condiciones no dejan ninguna apuesta. Amplía los límites o desactiva algún filtro.");
       round.bets = bets;

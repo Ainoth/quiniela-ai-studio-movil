@@ -88,6 +88,27 @@
     });
   }
 
+  function applySurprise(base, probabilities, level=0, locks=Array(14).fill(false), lockedBase=base) {
+    const original=normalizeBase(base),rows=validateProbabilities(probabilities),previous=normalizeBase(lockedBase);
+    if(!Number.isInteger(level)||level<0||level>10)throw Error("El factor sorpresa debe estar entre 0 y 10.");
+    if(!Array.isArray(locks)||locks.length!==14||locks.some(x=>typeof x!=="boolean"))throw Error("Se requieren 14 estados de bloqueo válidos.");
+    const widths=original.map(row=>row.length),targetTriples=widths.filter(w=>w===3).length,targetDoubles=widths.filter(w=>w===2).length;
+    const riskOrder=surpriseOrder(rows).map(x=>x.index),preferred=riskOrder.slice(0,Math.min(14,4+level));
+    const ranks=rows.map(row=>[0,1,2].sort((a,b)=>row[b]-row[a]||a-b));
+    const assigned=Array(14).fill(1),used=new Set();
+    locks.forEach((locked,i)=>{if(locked){assigned[i]=previous[i].length;used.add(i);}});
+    const originalTriples=widths.map((w,i)=>w===3?i:-1).filter(i=>i>=0),originalDoubles=widths.map((w,i)=>w===2?i:-1).filter(i=>i>=0);
+    const priority=(specific)=>[...preferred,...specific,...riskOrder];
+    const fill=(width,target,specific)=>{
+      const already=locks.reduce((n,locked,i)=>n+(locked&&assigned[i]===width?1:0),0),need=Math.max(0,target-already),candidates=[...new Set(priority(specific))].filter(i=>!used.has(i));
+      if(candidates.length<need)throw Error("No hay suficientes partidos disponibles para distribuir la base.");
+      candidates.slice(0,need).forEach(i=>{assigned[i]=width;used.add(i);});
+    };
+    fill(3,targetTriples,originalTriples);fill(2,targetDoubles,originalDoubles);
+    const result=rows.map((_,i)=>locks[i]?previous[i]:SIGNS.filter((_,sign)=>ranks[i].slice(0,assigned[i]).includes(sign)).join(""));
+    return {base:result,fixed:assigned.filter(w=>w===1).length,doubles:assigned.filter(w=>w===2).length,triples:assigned.filter(w=>w===3).length,columns:assigned.reduce((n,w)=>n*w,1)};
+  }
+
   function parseProbabilitySource(text, filename, roundKey, matches, sourceKind="custom") {
     if(String(text).length>20*1024*1024)throw Error("La fuente supera el límite de 20 MiB.");
     const parseValues=(raw,index)=>{
@@ -314,6 +335,10 @@
         V: [...column].filter((sign) => sign !== "1").length,
       };
       for (const sign of ["1", "X", "2", "V"]) {
+        if (Array.isArray(filters.allowedCounts?.[sign])) {
+          if (!filters.allowedCounts[sign][counts[sign]]) return false;
+          continue;
+        }
         const minimum = Number(filters.minCounts?.[sign] ?? 0);
         const maximum = Number(filters.maxCounts?.[sign] ?? 14);
         if (counts[sign] < minimum || counts[sign] > maximum) return false;
@@ -325,7 +350,9 @@
         current = sign === "1" ? 0 : current + 1;
         longest = Math.max(longest, current);
       }
-      if (longest > Number(filters.maxVariantRun || 14)) return false;
+      if (Array.isArray(filters.allowedVariantRuns)) {
+        if (!filters.allowedVariantRuns[longest]) return false;
+      } else if (longest > Number(filters.maxVariantRun ?? 14)) return false;
     }
     return true;
   }
@@ -489,7 +516,7 @@
 
   root.EscrutinioEngine = { roundLine, parseKickoff, formatKickoff, parseDates, parseHours, parseNames,
     normalizeTeam, sameTeamName,
-    normalizeBase, validateProbabilities, automaticPleno, parseProbabilitySource, coverageBase, configuredBase, automaticBase, historicalBase, weightedProbabilities, differentiateProbabilities, surpriseOrder, surpriseEligiblePositions, reducedTemplate, reduceByTable, coverageCounts, baseSize, satisfiesFilters,
+    normalizeBase, validateProbabilities, automaticPleno, parseProbabilitySource, coverageBase, configuredBase, automaticBase, historicalBase, applySurprise, weightedProbabilities, differentiateProbabilities, surpriseOrder, surpriseEligiblePositions, reducedTemplate, reduceByTable, coverageCounts, baseSize, satisfiesFilters,
     generateBets, probabilityMass, MAX_GENERATED,
     availableRounds, currentRound, scrutiny, live, evaluate, categoryPossibilities, awardBreakdown };
   if (typeof module !== "undefined") module.exports = root.EscrutinioEngine;
