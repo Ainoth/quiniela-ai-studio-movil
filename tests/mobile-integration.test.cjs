@@ -84,5 +84,9 @@ test("la comparación de apuestas permanece fija sobre la navegación y refleja 
   assert.match(html, /id="betSummaryBar"[\s\S]*?<nav class="bottom-nav"/);
   assert.match(app, /E\.countGeneratedBets\(base,round\.goals,filters\)/);
   assert.match(app, /function renderBetSummary\(\)/);
+  assert.match(app, /function summaryBase\(round=current\(\)\)/);
+  assert.match(app, /sameAsReduced&&Array\.isArray\(round\.unreducedBase\)/);
   assert.match(style, /\.bet-summary-bar\{position:fixed/);
+  assert.match(style, /\.bet-summary-item span\{font-size:10px\}/);
+  assert.match(style, /\.bet-summary-item b\{justify-content:space-between;font-size:12px\}/);
 });

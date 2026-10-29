@@ -201,9 +201,10 @@ function setReductionPosition(index,checked){const round=current(),set=new Set(r
 function selectReductionTable(value){current().reductionTable=Number(value);current().reductionPositions=null;save();renderReductionSetup();}
 function toggleManualReductionPositions(enabled){current().manualReductionPositions=!!enabled;if(enabled&&!current().reductionPositions){try{const table=window.QuinielaReductionTables.find(t=>t.number===current().reductionTable),template=E.reducedTemplate(selectedProbabilities(),table);current().reductionPositions=template.selectedPositions.slice();}catch(_){current().reductionPositions=[];}}save();renderReductionSetup();}
 function reductionTemplateFor(table){const probabilities=selectedProbabilities();if(!probabilities)throw Error("Descarga o selecciona porcentajes antes de crear la reducida.");return E.reducedTemplate(probabilities,table,current().manualReductionPositions?current().reductionPositions:null);}
+function clearReductionState(round){delete round.unreducedBase;delete round.unreducedBets;delete round.appliedReduction;}
 function buildReducedBase(){
   if(!isEditable())return setStatus("Solo se crea una base en la jornada en curso.","error");
-  try{const table=window.QuinielaReductionTables.find(t=>t.number===Number(byId("reductionTable").value)),template=reductionTemplateFor(table);current().base=template.base;current().bets=[];save();renderAll();setStatus("Base propia de Reducida "+table.number+" preparada.","success");}
+  try{const table=window.QuinielaReductionTables.find(t=>t.number===Number(byId("reductionTable").value)),template=reductionTemplateFor(table),round=current();clearReductionState(round);round.base=template.base;round.bets=[];save();renderAll();setStatus("Base propia de Reducida "+table.number+" preparada.","success");}
   catch(error){setStatus(error.message,"error");}
 }
 function applyOfficialReduction(){
@@ -314,11 +315,16 @@ function renderGoals() {
 function estimatedTickets() {
   try { return baseSize(); } catch (_error) { return 0; }
 }
+function summaryBase(round=current()){
+  const reduced=round.appliedReduction?.base;
+  const sameAsReduced=Array.isArray(reduced)&&Array.isArray(round.base)&&round.base.length===reduced.length&&round.base.every((row,index)=>row===reduced[index]);
+  return sameAsReduced&&Array.isArray(round.unreducedBase)?round.unreducedBase:round.base;
+}
 function renderActions() {
   const active = byId("page-quiniela").classList.contains("active");
   byId("actionDock").classList.toggle("visible", active);
   let size = estimatedTickets();
-  byId("dockCount").textContent = size.toLocaleString("es-ES") + (size === 1 ? " apuesta" : " apuestas");
+  byId("dockCount").textContent = "Base · "+size.toLocaleString("es-ES") + (size === 1 ? " apuesta" : " apuestas");
   byId("dockCost").textContent = money(size * state.settings.priceCents);
   byId("generateButton").disabled = busy || !isEditable() || size < 1 || size > E.MAX_GENERATED;
   if (!isEditable() && state.data) byId("generateButton").textContent = "Jornada de consulta";
@@ -326,7 +332,7 @@ function renderActions() {
   renderBetSummary();
 }
 function renderBetSummary(){
-  const round=current(),base=round.unreducedBase||round.base,filters=round.filters;
+  const round=current(),base=summaryBase(round),filters=round.filters;
   const active=filters.accountEnabled||filters.streakEnabled;let all=0,conditioned=0;
   try{
     const key=JSON.stringify([base,round.goals,active?filters:null]);
@@ -611,7 +617,7 @@ function fillBase() {
     }
   }
   catch (error) { return setStatus(error.message, "error"); }
-  round.base = chosen.base;round.bets = [];
+  clearReductionState(round);round.base = chosen.base;round.bets = [];
   if(generation.mode==="automatic")round.historyAudit={seasons:round.historySeasons.slice(),rounds:history.length,target:generation.historicalTarget,coverage:chosen.historicalCoverage,columns:chosen.columns};
   save(); renderAll();
   const counts = { fixed: 14-chosen.doubles-chosen.triples, doubles: chosen.doubles, triples: chosen.triples };
@@ -625,6 +631,7 @@ function toggleSign(index, sign) {
   allowed.has(sign) ? allowed.delete(sign) : allowed.add(sign);
   if (!allowed.size) return setStatus("Cada partido debe conservar al menos un signo.", "error");
   base[index] = "1X2".split("").filter((item) => allowed.has(item)).join("");
+  clearReductionState(current());
   current().bets = [];
   save(); renderAll();
 }
@@ -651,6 +658,7 @@ function generateCurrent() {
       const filters = round.filters;
       const bets = E.generateBets(round.base, round.goals, filters, E.MAX_GENERATED);
       if (!bets.length) throw Error("Las condiciones no dejan ninguna apuesta. Amplía los límites o desactiva algún filtro.");
+      clearReductionState(round);
       round.bets = bets;
       round.generatedAt = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
       if(filters.accountEnabled||filters.streakEnabled)filters.lastAppliedCount=bets.length;

@@ -31,3 +31,6 @@
 | RF-MOV-026 · aplicar condiciones al desarrollo y mostrar el resultado | Implementado v0.5.8 | acción explícita para regenerar desde la base con filtros activos; pruebas verifican el cambio del conjunto de apuestas |
 
 | RF-MOV-027 · mostrar siempre apuestas y coste sin reducción y tras condiciones | Implementado v0.5.9 | franja fija sobre la navegación con conteos derivados de la base, el Pleno y los filtros activos |
+
+| RF-MOV-028 · mantener coherentes el conteo de base y el resumen fijo tras las reducciones | Implementado v0.5.10 | resumen usa la base vigente y solo toma copia original mientras la reducción oficial coincide con la base actual |
+| RF-MOV-029 · mejorar legibilidad del resumen fijo | Implementado v0.5.10 | tipografía de etiquetas y cifras ampliada |

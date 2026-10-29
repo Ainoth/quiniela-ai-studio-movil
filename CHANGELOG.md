@@ -1,5 +1,13 @@
 # Cambios
 
+## 0.5.10 — cifras coherentes y resumen legible
+
+- Corrige la selección de la base completa cuando quedan datos de una reducción anterior; solo consulta la copia anterior mientras la reducida oficial siga activa.
+- Limpia las copias de reducción al crear o modificar una base y etiqueta aparte la base actual.
+- Aumenta la tipografía de la franja fija de apuestas y costes.
+- Verificado con 30 pruebas y compilación Android.
+
+
 ## 0.5.9 — resumen fijo de apuestas y coste
 
 - Añade sobre las pestañas una franja fija con el total y coste sin reducción y el total y coste tras condiciones.
