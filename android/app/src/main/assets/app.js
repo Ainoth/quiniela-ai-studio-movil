@@ -606,6 +606,23 @@ function setGenerationCounts() {
   byId("tripleCountValue").textContent = generation.triples;
   save(); renderAll();
 }
+function autoGenerationCount(kind) {
+  if(kind!=="doubles"&&kind!=="triples")return;
+  const round=current(),generation=round.generation||(round.generation={mode:"manual",doubles:0,triples:0,historicalTarget:0.7}),history=selectedHistoryRows();
+  if(!history.length)return setStatus("Selecciona al menos una temporada histórica para calcular esta cantidad.","error");
+  try{
+    const probabilities=effectiveProbabilities()||historyProbabilities(history);
+    const choice=E.historicalBase(probabilities,history,generation.historicalTarget,technicalColumnLimit(),round.locks,round.base);
+    const other=kind==="doubles"?generation.triples:generation.doubles;
+    const proposed=kind==="doubles"?choice.doubles:choice.triples;
+    const selected=Math.min(proposed,Math.max(0,14-other));
+    generation.mode="manual";
+    generation[kind]=selected;
+    save();renderAll();
+    const label=kind==="doubles"?"dobles":"triples";
+    setStatus("Auto " + label + ": " + selected + " según " + history.length.toLocaleString("es-ES") + " jornadas históricas y los porcentajes actuales." + (selected<proposed?" Ajustado para respetar los 14 partidos.":""),"success");
+  }catch(error){setStatus("No se pudo calcular la cantidad automática: "+error.message,"error");}
+}
 function fillBase() {
   if (!isEditable()) return setStatus("La jornada seleccionada es solo de consulta.", "error");
   const round=current(),generation=round.generation,history=selectedHistoryRows();

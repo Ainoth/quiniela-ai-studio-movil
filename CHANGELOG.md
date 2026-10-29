@@ -1,5 +1,10 @@
 # Cambios
 
+## 0.5.17 — ajuste automático individual de dobles y triples
+
+- Añade un botón Auto en cada control para estimar esa cantidad a partir de las temporadas seleccionadas y los porcentajes activos.
+- Cada botón conserva la cantidad del otro control, cambia a modo manual y respeta el límite de 14 partidos.
+
 ## 0.5.16 — escalas de cantidades independientes
 
 - Mantiene fija de 0 a 14 la escala de cada barra para que mover dobles no desplace visualmente la de triples.
