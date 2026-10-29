@@ -1,5 +1,12 @@
 # Cambios
 
+## 0.5.9 — resumen fijo de apuestas y coste
+
+- Añade sobre las pestañas una franja fija con el total y coste sin reducción y el total y coste tras condiciones.
+- Calcula el total condicionado desde la base actual, el Pleno y las reglas activas, sin depender de que se haya pulsado Generar.
+- Verificado con 30 pruebas, incluida comparación de conteos con condiciones y sin ellas.
+
+
 ## 0.5.8 — aplicar condiciones al desarrollo visible
 
 - Añade el botón «Aplicar y generar» en Condiciones para regenerar la quiniela actual con los filtros activos.

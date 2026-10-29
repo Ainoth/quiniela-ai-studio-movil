@@ -406,6 +406,14 @@
     return output;
   }
 
+  function countGeneratedBets(base, goals=["0","0"], filters={}) {
+    const normalized=normalizeBase(base),masks=goals.map(mask=>[...new Set(String(mask))]);
+    if(masks.length!==2||masks.some(mask=>!mask.length||mask.some(goal=>!"012M".includes(goal))))throw Error("Selecciona al menos un resultado 0/1/2/M para cada equipo del Pleno.");
+    const column=Array(14);let count=0;
+    const visit=position=>{if(position===14){if(satisfiesFilters(column,filters))count++;return;}for(const sign of normalized[position]){column[position]=sign;visit(position+1);}};
+    visit(0);return count*masks[0].length*masks[1].length;
+  }
+
   function probabilityMass(bets, probabilities) {
     const rows = validateProbabilities(probabilities);
     let mass = 0;
@@ -543,7 +551,7 @@
   root.EscrutinioEngine = { roundLine, parseKickoff, formatKickoff, parseDates, parseHours, parseNames,
     normalizeTeam, sameTeamName,
     normalizeBase, validateProbabilities, automaticPleno, parseProbabilitySource, coverageBase, configuredBase, automaticBase, historicalBase, applySurprise, weightedProbabilities, differentiateProbabilities, surpriseOrder, surpriseEligiblePositions, reducedTemplate, reduceByTable, coverageCounts, baseSize, satisfiesFilters,
-    generateBets, probabilityMass, historicalConditionFilters, conditionRiskCoverage, MAX_GENERATED,
+    generateBets, countGeneratedBets, probabilityMass, historicalConditionFilters, conditionRiskCoverage, MAX_GENERATED,
     availableRounds, currentRound, scrutiny, live, evaluate, categoryPossibilities, awardBreakdown };
   if (typeof module !== "undefined") module.exports = root.EscrutinioEngine;
 })(typeof globalThis !== "undefined" ? globalThis : this);

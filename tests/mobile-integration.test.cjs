@@ -78,3 +78,11 @@ test("Condiciones ofrece reglas visuales y ajuste automático por temporadas", (
   assert.match(style, /\.scrutiny-actions button[^}]*font-size:11px/);
   assert.match(style, /\.system-actions button[^}]*font-size:11px/);
 });
+
+test("la comparación de apuestas permanece fija sobre la navegación y refleja ambos costes", () => {
+  assert.match(html, /id="betSummaryBar"[\s\S]*?id="summaryFullBets"[\s\S]*?id="summaryFullCost"[\s\S]*?id="summaryConditionBets"[\s\S]*?id="summaryConditionCost"/);
+  assert.match(html, /id="betSummaryBar"[\s\S]*?<nav class="bottom-nav"/);
+  assert.match(app, /E\.countGeneratedBets\(base,round\.goals,filters\)/);
+  assert.match(app, /function renderBetSummary\(\)/);
+  assert.match(style, /\.bet-summary-bar\{position:fixed/);
+});

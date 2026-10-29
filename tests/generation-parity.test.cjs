@@ -146,6 +146,7 @@ test("generating with active conditions changes the bet set", () => {
   const filtered=E.generateBets(base,goals,{accountEnabled:true,allowedCounts},E.MAX_GENERATED);
   assert.equal(all.length,2**14);
   assert.deepEqual(filtered,["1111111111111100"]);
+  assert.equal(E.countGeneratedBets(base,goals,{accountEnabled:true,allowedCounts}),filtered.length);
   assert.ok(filtered.length<all.length);
 });
 

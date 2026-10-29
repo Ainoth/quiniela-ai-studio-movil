@@ -29,3 +29,5 @@
 | RF-MOV-007 · consultar previsión orientativa de premios dentro de la app | Implementado v0.2.4 | recaudación, bote y porcentajes publicados; escenario con marcadores actuales y favoritos pendientes; mantiene el desglose PRE oficial |
 
 | RF-MOV-026 · aplicar condiciones al desarrollo y mostrar el resultado | Implementado v0.5.8 | acción explícita para regenerar desde la base con filtros activos; pruebas verifican el cambio del conjunto de apuestas |
+
+| RF-MOV-027 · mostrar siempre apuestas y coste sin reducción y tras condiciones | Implementado v0.5.9 | franja fija sobre la navegación con conteos derivados de la base, el Pleno y los filtros activos |

@@ -10,6 +10,7 @@ let state = {
 };
 let busy = false, requestId = 0;
 let pendingProbabilityImport = false;
+let betSummaryCacheKey = "", betSummaryCache = null;
 const requests = new Map();
 const byId = (id) => document.getElementById(id);
 
@@ -322,6 +323,20 @@ function renderActions() {
   byId("generateButton").disabled = busy || !isEditable() || size < 1 || size > E.MAX_GENERATED;
   if (!isEditable() && state.data) byId("generateButton").textContent = "Jornada de consulta";
   else byId("generateButton").textContent = "Generar quiniela";
+  renderBetSummary();
+}
+function renderBetSummary(){
+  const round=current(),base=round.unreducedBase||round.base,filters=round.filters;
+  const active=filters.accountEnabled||filters.streakEnabled;let all=0,conditioned=0;
+  try{
+    const key=JSON.stringify([base,round.goals,active?filters:null]);
+    if(key===betSummaryCacheKey&&betSummaryCache){({all,conditioned}=betSummaryCache);}
+    else{all=E.baseSize(base,round.goals);conditioned=active?E.countGeneratedBets(base,round.goals,filters):all;betSummaryCacheKey=key;betSummaryCache={all,conditioned};}
+  }catch(_){all=0;conditioned=0;}
+  byId("summaryFullBets").textContent=all.toLocaleString("es-ES");
+  byId("summaryFullCost").textContent=money(all*state.settings.priceCents);
+  byId("summaryConditionBets").textContent=conditioned.toLocaleString("es-ES");
+  byId("summaryConditionCost").textContent=money(conditioned*state.settings.priceCents);
 }
 function renderGenerated() {
   const round = current();
@@ -370,6 +385,7 @@ function renderFilters() {
   byId("variantRunChoices").innerHTML=heading+`<div class="condition-count-row"><b class="condition-sign sign-v">R</b>${Array.from({length:15},(_,n)=>tile(filters.allowedVariantRuns[n],"Racha de variantes: "+n,"run","",n)).join("")}</div>`;
   const active=filters.accountEnabled||filters.streakEnabled;byId("filterStatus").textContent=active?"Condiciones activas al generar":"Filtros desactivados";byId("filterEffect").textContent=filters.autoFromHistory?(filters.autoHistoryNote||"Ajuste automático al histórico activado."):active?"El filtro puede reducir el número de apuestas generado.":"Los valores se conservan. Activa una condición para aplicarla.";
   byId("conditionRunResult").textContent=Number.isInteger(filters.lastAppliedCount)?"Último desarrollo con estas condiciones: "+filters.lastAppliedCount.toLocaleString("es-ES")+" apuestas.":"Configura las reglas y pulsa «Aplicar y generar» para recalcular las apuestas.";
+  renderBetSummary();
 }
 function toggleConditionValue(kind,key,value){const f=current().filters;f.autoFromHistory=false;f.lastAppliedCount=null;if(kind==="count")f.allowedCounts[key][value]=!f.allowedCounts[key][value];else f.allowedVariantRuns[value]=!f.allowedVariantRuns[value];save();renderFilters();}
 function updateFilters(){const f=current().filters;f.accountEnabled=byId("accountEnabled").checked;f.streakEnabled=byId("streakEnabled").checked;f.lastAppliedCount=null;save();renderFilters();}

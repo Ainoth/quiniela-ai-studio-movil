@@ -142,6 +142,10 @@
     </main>
 
     <div id="actionDock" class="action-dock"><div><b id="dockCount">0 apuestas</b><small id="dockCost">0,00 €</small></div><button id="generateButton" class="primary" onclick="generateCurrent()" disabled>Generar quiniela</button></div>
+    <div id="betSummaryBar" class="bet-summary-bar" aria-label="Resumen de apuestas y coste">
+      <div class="bet-summary-item"><span>Sin reducción</span><b><strong id="summaryFullBets">0</strong> · <em id="summaryFullCost">0,00 €</em></b></div>
+      <div class="bet-summary-item"><span>Con condiciones</span><b><strong id="summaryConditionBets">0</strong> · <em id="summaryConditionCost">0,00 €</em></b></div>
+    </div>
     <nav class="bottom-nav" aria-label="Secciones principales">
       <button class="nav-button active" data-page="quiniela"><span>▦</span><small>Quiniela</small></button>
       <button class="nav-button" data-page="condiciones"><span>☷</span><small>Filtros</small></button>
