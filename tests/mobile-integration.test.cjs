@@ -43,6 +43,7 @@ test("la generación automática muestra sus temporadas y bloquea dobles/triples
   assert.match(app, /generation\.autoDoubles===true/);
   assert.match(app, /generation\.autoTriples===true/);
   assert.match(app, /generation\[autoKey\]=true/);
+  assert.doesNotMatch(app, /generation\.autoDoubles=false;generation\.autoTriples=false;\s*generation\[autoKey\]=true/);
   assert.match(app, /E\.historicalBase\(probabilities,history,generation\.historicalTarget,technicalColumnLimit\(\),round\.locks,round\.base\)/);
   assert.match(app, /generation\.mode="manual";/);
   assert.match(app, /doubleCount"\)\.max=14;/);

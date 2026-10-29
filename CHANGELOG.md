@@ -1,5 +1,9 @@
 # Cambios
 
+## 0.5.19 — modos Auto independientes
+
+- Cambiar una barra a Auto ya no modifica el modo Auto/Manual de la otra.
+
 ## 0.5.18 — alternar Auto y Manual por control
 
 - Cada barra bloquea su cantidad calculada al pulsar Auto y cambia el botón a Manual.

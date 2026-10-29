@@ -623,7 +623,6 @@ function autoGenerationCount(kind) {
     const proposed=kind==="doubles"?choice.doubles:choice.triples;
     const selected=Math.min(proposed,Math.max(0,14-other));
     generation.mode="manual";
-    generation.autoDoubles=false;generation.autoTriples=false;
     generation[autoKey]=true;
     generation[kind]=selected;
     save();renderAll();

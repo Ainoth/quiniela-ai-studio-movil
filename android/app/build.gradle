@@ -7,8 +7,8 @@ android {
         applicationId 'es.quinielaaistudio.escrutinio'
         minSdk 23
         targetSdk 33
-        versionCode 31
-        versionName '0.5.18'
+        versionCode 32
+        versionName '0.5.19'
     }
     buildTypes {
         release {
