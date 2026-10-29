@@ -89,4 +89,5 @@ test("la comparación de apuestas permanece fija sobre la navegación y refleja 
   assert.match(style, /\.bet-summary-bar\{position:fixed/);
   assert.match(style, /\.bet-summary-item span\{font-size:10px\}/);
   assert.match(style, /\.bet-summary-item b\{justify-content:space-between;font-size:12px\}/);
+  assert.match(style, /\.bet-summary-item\+\.bet-summary-item\{border-left:2px solid #49cfff/);
 });

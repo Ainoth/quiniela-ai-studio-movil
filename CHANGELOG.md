@@ -1,5 +1,11 @@
 # Cambios
 
+## 0.5.11 — separación de los resúmenes
+
+- Añade una línea vertical de contraste entre el bloque sin reducción y el bloque con condiciones.
+- Verificado con pruebas automatizadas y compilación Android.
+
+
 ## 0.5.10 — cifras coherentes y resumen legible
 
 - Corrige la selección de la base completa cuando quedan datos de una reducción anterior; solo consulta la copia anterior mientras la reducida oficial siga activa.

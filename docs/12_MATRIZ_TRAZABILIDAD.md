@@ -34,3 +34,5 @@
 
 | RF-MOV-028 · mantener coherentes el conteo de base y el resumen fijo tras las reducciones | Implementado v0.5.10 | resumen usa la base vigente y solo toma copia original mientras la reducción oficial coincide con la base actual |
 | RF-MOV-029 · mejorar legibilidad del resumen fijo | Implementado v0.5.10 | tipografía de etiquetas y cifras ampliada |
+
+| RF-MOV-030 · distinguir visualmente los dos bloques del resumen fijo | Implementado v0.5.11 | separador vertical contrastado entre cifras sin reducción y con condiciones |
