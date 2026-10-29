@@ -221,8 +221,12 @@ function renderCoverageLevels() {
   byId("generationMode").value = generation.mode;
   byId("doubleCount").value = generation.doubles;
   byId("tripleCount").value = generation.triples;
-  byId("doubleCount").disabled = generation.mode !== "manual";
-  byId("tripleCount").disabled = generation.mode !== "manual";
+  byId("doubleCount").disabled = generation.mode !== "manual" || generation.autoDoubles===true;
+  byId("tripleCount").disabled = generation.mode !== "manual" || generation.autoTriples===true;
+  byId("doubleModeButton").textContent=generation.autoDoubles===true?"Manual":"Auto";
+  byId("tripleModeButton").textContent=generation.autoTriples===true?"Manual":"Auto";
+  byId("doubleModeButton").setAttribute("aria-label",generation.autoDoubles===true?"Cambiar dobles a modo manual":"Calcular dobles automáticamente");
+  byId("tripleModeButton").setAttribute("aria-label",generation.autoTriples===true?"Cambiar triples a modo manual":"Calcular triples automáticamente");
   byId("doubleCountValue").textContent = generation.doubles;
   byId("tripleCountValue").textContent = generation.triples;
   byId("generationModeHint").textContent=generation.mode==="manual"?"Modo manual: indica cuántos dobles y triples quieres.":"Modo automático: el programa calcula los dobles y triples según las temporadas seleccionadas.";
@@ -594,7 +598,7 @@ function applyAuxiliaryWeights(){
   catch(error){setStatus(error.message,"error");}
 }
 function selectCoverage(level) { current().coverageLevel = Number(level); save(); renderAll(); }
-function setGenerationMode(mode) { current().generation.mode = mode === "manual" ? "manual" : "automatic"; save(); renderAll(); }
+function setGenerationMode(mode) { const generation=current().generation;generation.mode = mode === "manual" ? "manual" : "automatic";generation.autoDoubles=false;generation.autoTriples=false;save();renderAll(); }
 function setGenerationCounts() {
   const generation = current().generation || (current().generation = {});
   generation.doubles = Math.max(0, Math.min(14, Number(byId("doubleCount").value) || 0));
@@ -609,6 +613,8 @@ function setGenerationCounts() {
 function autoGenerationCount(kind) {
   if(kind!=="doubles"&&kind!=="triples")return;
   const round=current(),generation=round.generation||(round.generation={mode:"manual",doubles:0,triples:0,historicalTarget:0.7}),history=selectedHistoryRows();
+  const autoKey=kind==="doubles"?"autoDoubles":"autoTriples";
+  if(generation[autoKey]===true){generation[autoKey]=false;generation.mode="manual";save();renderAll();setStatus("Control de "+(kind==="doubles"?"dobles":"triples")+" en modo manual.","success");return;}
   if(!history.length)return setStatus("Selecciona al menos una temporada histórica para calcular esta cantidad.","error");
   try{
     const probabilities=effectiveProbabilities()||historyProbabilities(history);
@@ -617,6 +623,8 @@ function autoGenerationCount(kind) {
     const proposed=kind==="doubles"?choice.doubles:choice.triples;
     const selected=Math.min(proposed,Math.max(0,14-other));
     generation.mode="manual";
+    generation.autoDoubles=false;generation.autoTriples=false;
+    generation[autoKey]=true;
     generation[kind]=selected;
     save();renderAll();
     const label=kind==="doubles"?"dobles":"triples";

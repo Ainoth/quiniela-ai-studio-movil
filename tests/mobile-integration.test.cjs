@@ -38,8 +38,13 @@ test("la generación automática muestra sus temporadas y bloquea dobles/triples
   assert.match(html, /id="doubleCountValue"/);
   assert.match(html, /autoGenerationCount\('doubles'\)/);
   assert.match(html, /autoGenerationCount\('triples'\)/);
+  assert.match(html, /id="doubleModeButton"/);
+  assert.match(html, /id="tripleModeButton"/);
+  assert.match(app, /generation\.autoDoubles===true/);
+  assert.match(app, /generation\.autoTriples===true/);
+  assert.match(app, /generation\[autoKey\]=true/);
   assert.match(app, /E\.historicalBase\(probabilities,history,generation\.historicalTarget,technicalColumnLimit\(\),round\.locks,round\.base\)/);
-  assert.match(app, /generation\.mode="manual";\s*generation\[kind\]=selected/);
+  assert.match(app, /generation\.mode="manual";/);
   assert.match(app, /doubleCount"\)\.max=14;/);
   assert.match(app, /tripleCount"\)\.max=14;/);
   assert.match(html, /id="generationModeHint"/);

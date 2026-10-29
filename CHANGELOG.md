@@ -1,5 +1,10 @@
 # Cambios
 
+## 0.5.18 — alternar Auto y Manual por control
+
+- Cada barra bloquea su cantidad calculada al pulsar Auto y cambia el botón a Manual.
+- Manual desbloquea únicamente esa barra; el otro control conserva su modo.
+
 ## 0.5.17 — ajuste automático individual de dobles y triples
 
 - Añade un botón Auto en cada control para estimar esa cantidad a partir de las temporadas seleccionadas y los porcentajes activos.
