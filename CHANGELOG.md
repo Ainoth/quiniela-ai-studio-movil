@@ -1,5 +1,10 @@
 # Cambios
 
+## 0.5.16 — escalas de cantidades independientes
+
+- Mantiene fija de 0 a 14 la escala de cada barra para que mover dobles no desplace visualmente la de triples.
+- Conserva el tope conjunto de 14 partidos.
+
 ## 0.5.15 — selector visual para dobles y triples
 
 - Sustituye las casillas numéricas por barras deslizantes que muestran la cantidad elegida.

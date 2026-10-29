@@ -237,8 +237,8 @@ function renderCoverageLevels() {
     try{const choice=E.historicalBase(probabilities,history,generation.historicalTarget,technicalColumnLimit(),round.locks,round.base);E.applySurprise(choice.base,surpriseProbabilityRows()||probabilities,round.surpriseLevel,round.locks,round.base);counts={fixed:choice.fixed,doubles:choice.doubles,triples:choice.triples};generation.doubles=choice.doubles;generation.triples=choice.triples;summary=" · "+choice.columns.toLocaleString("es-ES")+" col. · "+Math.round(choice.historicalCoverage*100)+"% hist.";}catch(_){summary=" · revisa el histórico";}
   }
   if(generation.mode==="automatic"){byId("doubleCount").value=counts.doubles;byId("tripleCount").value=counts.triples;}
-  byId("doubleCount").max=14-counts.triples;
-  byId("tripleCount").max=14-counts.doubles;
+  byId("doubleCount").max=14;
+  byId("tripleCount").max=14;
   byId("doubleCountValue").textContent=counts.doubles;
   byId("tripleCountValue").textContent=counts.triples;
   byId("coverageCaption").textContent = counts.fixed + " fijos · " + counts.doubles + " dobles · " + counts.triples + " triples"+summary;
@@ -599,8 +599,8 @@ function setGenerationCounts() {
   const generation = current().generation || (current().generation = {});
   generation.doubles = Math.max(0, Math.min(14, Number(byId("doubleCount").value) || 0));
   generation.triples = Math.max(0, Math.min(14-generation.doubles, Number(byId("tripleCount").value) || 0));
-  byId("doubleCount").max = 14-generation.triples;
-  byId("tripleCount").max = 14-generation.doubles;
+  byId("doubleCount").max = 14;
+  byId("tripleCount").max = 14;
   byId("tripleCount").value = generation.triples;
   byId("doubleCountValue").textContent = generation.doubles;
   byId("tripleCountValue").textContent = generation.triples;
