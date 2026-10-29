@@ -1,5 +1,11 @@
 # Cambios
 
+## 0.5.14 — filas de partidos más claras
+
+- Porcentajes sin corchetes, con tipografía ligeramente mayor.
+- Número de partido más estrecho y alineado hacia la izquierda.
+- Menos espacio vertical entre partidos.
+
 ## 0.5.13 — filas compactas en la quiniela base
 
 - Presenta cada partido en una línea: número, local, visitante, porcentajes 1/X/2 entre corchetes y sus botones.

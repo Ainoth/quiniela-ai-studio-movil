@@ -285,7 +285,7 @@ function renderFixtures() {
   }
   byId("fixtures").innerHTML = matches.slice(0, 14).map((match, index) => {
     const row = probabilities?.[index];
-    const percentages='<div class="fixture-percentages">'+[0,1,2].map(i=>'<span class="fixture-pct">['+(row?formatPct(row[i]):"—")+']</span>').join("")+'</div>';
+    const percentages='<div class="fixture-percentages">'+[0,1,2].map(i=>'<span class="fixture-pct">'+(row?formatPct(row[i]):"—")+'</span>').join("")+'</div>';
     return '<div class="fixture-row"><span class="fixture-number">' + String(index + 1).padStart(2, "0") + '</span><span class="fixture-teams">' + escapeHtml(match.home) + " – " + escapeHtml(match.away) + '</span>'+percentages+'<div class="sign-buttons">' + ["1", "X", "2"].map((sign) =>
       '<button class="' + (round.base[index].includes(sign) ? "selected" : "") + '" onclick="toggleSign(' + index + ',\'' + sign + '\')" aria-label="Partido ' + (index + 1) + " signo " + sign + '" ' + (!isEditable() ? "disabled" : "") + ">" + sign + "</button>",
     ).join("") + "</div></div>";

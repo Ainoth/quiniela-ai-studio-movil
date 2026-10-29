@@ -97,7 +97,10 @@ test("cada partido muestra número, equipos, porcentajes y signos en una sola fi
   assert.match(app, /round\.locks\.some\(Boolean\).*Array\(14\)\.fill\(false\)/);
   assert.match(app, /fixture-percentages/);
   assert.match(app, /class="fixture-pct"/);
+  assert.doesNotMatch(app, /fixture-pct[^\n]*\]\x27/);
   assert.doesNotMatch(app, /Desvío del favorito/);
   assert.match(app, /return '<div class="fixture-row"><span class="fixture-number"[\s\S]*?class="fixture-teams"[\s\S]*?\+percentages\+'<div class="sign-buttons"/);
-  assert.match(style, /\.fixture-row\{grid-template-columns:18px minmax\(70px,1fr\) 90px 96px;gap:4px;min-height:38px/);
+  assert.match(style, /\.fixtures\{gap:2px\}\.fixture-row\{grid-template-columns:14px minmax\(70px,1fr\) 90px 96px;gap:3px;min-height:34px/);
+  assert.match(style, /\.fixture-teams\{font-size:11px\}/);
+  assert.match(style, /\.fixture-pct\{height:21px;font-size:9px\}/);
 });

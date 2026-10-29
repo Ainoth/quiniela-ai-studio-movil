@@ -39,4 +39,4 @@
 
 | RF-MOV-031 · quitar candados y corregir la lectura de porcentajes de los partidos | Implementado v0.5.12 | elimina controles de bloqueo; muestra 1/X/2 como porcentajes redondeados desde fracciones normalizadas y separa el riesgo estimado |
 
-| RF-MOV-032 · mostrar cada partido en una sola línea compacta | Implementado v0.5.13 | número, local, visitante, tres porcentajes entre corchetes y botones 1/X/2; sin línea adicional de riesgo |
+| RF-MOV-032 · mostrar cada partido en una sola línea compacta | Implementado v0.5.14 | número estrecho alineado a la izquierda, equipos, tres porcentajes sin corchetes y botones 1/X/2, con filas más juntas |
