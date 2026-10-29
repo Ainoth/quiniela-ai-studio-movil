@@ -27,3 +27,5 @@
 | RF-MOV-005 · abrir el escrutinio desde la app completa | Implementado v0.2.2 | pestaña inferior Escrutinio; importa TXT o usa el desarrollo actual |
 | RF-MOV-006 · ver aciertos, fallos y pendientes durante los partidos | Implementado v0.2.3 | resumen de la mejor apuesta y actualización automática cada minuto |
 | RF-MOV-007 · consultar previsión orientativa de premios dentro de la app | Implementado v0.2.4 | recaudación, bote y porcentajes publicados; escenario con marcadores actuales y favoritos pendientes; mantiene el desglose PRE oficial |
+
+| RF-MOV-026 · aplicar condiciones al desarrollo y mostrar el resultado | Implementado v0.5.8 | acción explícita para regenerar desde la base con filtros activos; pruebas verifican el cambio del conjunto de apuestas |

@@ -1,5 +1,13 @@
 # Cambios
 
+## 0.5.8 — aplicar condiciones al desarrollo visible
+
+- Añade el botón «Aplicar y generar» en Condiciones para regenerar la quiniela actual con los filtros activos.
+- Muestra el número de apuestas que quedan tras aplicar las reglas y aclara el resultado en el estado de generación.
+- Añade una prueba que verifica que los filtros reducen realmente el conjunto generado.
+- Verificado con 29 pruebas y compilación Android.
+
+
 ## 0.5.7 — escala de riesgo corregida
 
 - Invierte la escala de riesgo para que el nivel mínimo conserve el 97% de la muestra y el muy alto el 50%. A más riesgo, el filtro es más estrecho y aumenta la posibilidad de excluir resultados históricos.

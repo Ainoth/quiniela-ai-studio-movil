@@ -138,6 +138,17 @@ test("condition filters accept independent exact sign counts and run lengths", (
   assert.equal(E.satisfiesFilters("1XXXXXXXXXXXXX",filters),true);
 });
 
+test("generating with active conditions changes the bet set", () => {
+  const base=Array(14).fill("1X"),goals=["0","0"];
+  const all=E.generateBets(base,goals,{},E.MAX_GENERATED);
+  const allowedCounts=Object.fromEntries(["1","X","2","V"].map(sign=>[sign,Array(15).fill(false)]));
+  allowedCounts["1"][14]=true;allowedCounts.X[0]=true;allowedCounts["2"][0]=true;allowedCounts.V[0]=true;
+  const filtered=E.generateBets(base,goals,{accountEnabled:true,allowedCounts},E.MAX_GENERATED);
+  assert.equal(all.length,2**14);
+  assert.deepEqual(filtered,["1111111111111100"]);
+  assert.ok(filtered.length<all.length);
+});
+
 test("historical conditions select count and run values covering the requested sample share", () => {
   const rows=["11111111111111","1111111111111X","111111111111XX","X2222222222222"];
   const result=E.historicalConditionFilters(rows,0.75);

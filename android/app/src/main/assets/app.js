@@ -256,6 +256,7 @@ function selectAllHistory(checked){current().historySeasons=checked?HISTORY.seas
 function setHistoricalTarget(value){current().generation.historicalTarget=Number(value)/100;save();renderCoverageLevels();}
 function recomputeHistoricalConditions(){
   const filters=current().filters,rows=selectedHistoryRows();
+  filters.lastAppliedCount=null;
   if(!rows.length){filters.accountEnabled=false;filters.streakEnabled=false;filters.autoHistoryNote="Selecciona temporadas históricas en Quiniela para calcular estas opciones.";return false;}
   try{
     const coverage=E.conditionRiskCoverage(filters.riskLevel),result=E.historicalConditionFilters(rows,coverage);
@@ -266,7 +267,7 @@ function recomputeHistoricalConditions(){
   }catch(error){filters.autoHistoryNote=error.message;return false;}
 }
 function toggleAutoConditions(enabled){const filters=current().filters;filters.autoFromHistory=!!enabled;if(enabled)recomputeHistoricalConditions();save();renderFilters();}
-function setConditionRisk(level){const filters=current().filters;filters.riskLevel=level;if(filters.autoFromHistory)recomputeHistoricalConditions();save();renderFilters();}
+function setConditionRisk(level){const filters=current().filters;filters.riskLevel=level;filters.lastAppliedCount=null;if(filters.autoFromHistory)recomputeHistoricalConditions();save();renderFilters();}
 function setSurpriseLevel(value){current().surpriseLevel=Math.max(0,Math.min(10,Number(value)||0));save();renderCoverageLevels();renderFixtures();}
 function baseSize() {
   return E.baseSize(current().base, current().goals);
@@ -368,9 +369,11 @@ function renderFilters() {
   byId("conditionCounts").innerHTML=heading+signs.map(([key,label,cls])=>`<div class="condition-count-row"><b class="condition-sign ${cls}">${label}</b>${Array.from({length:15},(_,n)=>tile(filters.allowedCounts[key][n],label+": "+n+" signos","count",key,n)).join("")}</div>`).join("");
   byId("variantRunChoices").innerHTML=heading+`<div class="condition-count-row"><b class="condition-sign sign-v">R</b>${Array.from({length:15},(_,n)=>tile(filters.allowedVariantRuns[n],"Racha de variantes: "+n,"run","",n)).join("")}</div>`;
   const active=filters.accountEnabled||filters.streakEnabled;byId("filterStatus").textContent=active?"Condiciones activas al generar":"Filtros desactivados";byId("filterEffect").textContent=filters.autoFromHistory?(filters.autoHistoryNote||"Ajuste automático al histórico activado."):active?"El filtro puede reducir el número de apuestas generado.":"Los valores se conservan. Activa una condición para aplicarla.";
+  byId("conditionRunResult").textContent=Number.isInteger(filters.lastAppliedCount)?"Último desarrollo con estas condiciones: "+filters.lastAppliedCount.toLocaleString("es-ES")+" apuestas.":"Configura las reglas y pulsa «Aplicar y generar» para recalcular las apuestas.";
 }
-function toggleConditionValue(kind,key,value){const f=current().filters;f.autoFromHistory=false;if(kind==="count")f.allowedCounts[key][value]=!f.allowedCounts[key][value];else f.allowedVariantRuns[value]=!f.allowedVariantRuns[value];save();renderFilters();}
-function updateFilters(){const f=current().filters;f.accountEnabled=byId("accountEnabled").checked;f.streakEnabled=byId("streakEnabled").checked;save();renderFilters();}
+function toggleConditionValue(kind,key,value){const f=current().filters;f.autoFromHistory=false;f.lastAppliedCount=null;if(kind==="count")f.allowedCounts[key][value]=!f.allowedCounts[key][value];else f.allowedVariantRuns[value]=!f.allowedVariantRuns[value];save();renderFilters();}
+function updateFilters(){const f=current().filters;f.accountEnabled=byId("accountEnabled").checked;f.streakEnabled=byId("streakEnabled").checked;f.lastAppliedCount=null;save();renderFilters();}
+function applyConditionsToDevelopment(){const filters=current().filters;if(!filters.accountEnabled&&!filters.streakEnabled)return setStatus("Activa primero Cuenta o Rachas para aplicar condiciones.","error");generateCurrent();}
 
 function renderAnalysis() {
   const round = current();
@@ -634,8 +637,10 @@ function generateCurrent() {
       if (!bets.length) throw Error("Las condiciones no dejan ninguna apuesta. Amplía los límites o desactiva algún filtro.");
       round.bets = bets;
       round.generatedAt = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+      if(filters.accountEnabled||filters.streakEnabled)filters.lastAppliedCount=bets.length;
       save(); renderAll();
-      setStatus("Desarrollo generado: " + bets.length.toLocaleString("es-ES") + " apuestas · " + money(bets.length * state.settings.priceCents) + ".", "success");
+      if(byId("page-condiciones").classList.contains("active"))renderFilters();
+      setStatus("Desarrollo generado"+(filters.accountEnabled||filters.streakEnabled?" con condiciones aplicadas":"")+": " + bets.length.toLocaleString("es-ES") + " apuestas · " + money(bets.length * state.settings.priceCents) + ".", "success");
     } catch (error) { setStatus(error.message, "error"); }
     finally { setBusy(false); renderAll(); }
   }, 35);
