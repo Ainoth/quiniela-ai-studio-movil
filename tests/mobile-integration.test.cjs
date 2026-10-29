@@ -20,6 +20,13 @@ test("Quiniela AI Studio expone Escrutinio en la navegación móvil", () => {
   assert.match(app, /window\.renderScrutiny\(\)/);
 });
 
+test("el botón Generar quiniela queda al final de su pestaña, fuera de la barra fija", () => {
+  assert.match(html, /id="page-quiniela"[\s\S]*id="generateButton"[^>]*>Generar quiniela<\/button>\s*<\/section>\s*<section id="page-condiciones"/);
+  assert.doesNotMatch(html, /id="actionDock"|id="dockCount"|id="dockCost"/);
+  assert.doesNotMatch(app, /byId\("actionDock"\)|byId\("dockCount"\)|byId\("dockCost"\)/);
+  assert.match(html, /id="betSummaryBar"/);
+});
+
 test("la pantalla acepta TXT y solo calcula premios con el PRE definitivo", () => {
   assert.match(html, /Importar apuestas TXT/);
   assert.match(html, /Usar desarrollo actual/);

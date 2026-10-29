@@ -90,6 +90,7 @@
           <label class="field-label" for="reductionTable">Tabla oficial de reducida</label><select id="reductionTable" onchange="selectReductionTable(this.value)"></select><p id="officialReductionInfo" class="help-text">Elige una tabla para consultar su coste y cobertura.</p><label class="switch-label"><input id="manualReductionPositions" type="checkbox" onchange="toggleManualReductionPositions(this.checked)"> Elegir posiciones manualmente</label><div id="reductionPositions" class="reduction-positions"></div><button class="outline full" onclick="buildReducedBase()">Proponer base según porcentajes</button><button class="primary full" onclick="applyOfficialReduction()">Generar apuestas reducidas</button>
           <details class="budget-inline"><summary>Optimizar por presupuesto</summary><label class="field-label" for="reductionBudget">Presupuesto máximo (€)</label><input id="reductionBudget" type="number" min="0.01" max="100000" step="0.01" value="10"><p id="reductionInfo" class="help-text">Selecciona apuestas priorizando probabilidad y diversidad.</p><button class="secondary full" onclick="applyReduction()">Reducir desarrollo</button><button class="outline full" onclick="restoreFullDevelopment()">Restaurar desarrollo completo</button></details>
         </details>
+        <button id="generateButton" class="primary full generate-at-end" onclick="generateCurrent()" disabled>Generar quiniela</button>
       </section>
 
       <section id="page-condiciones" class="page" aria-labelledby="title-condiciones">
@@ -144,7 +145,6 @@
       </section>
     </main>
 
-    <div id="actionDock" class="action-dock"><div><b id="dockCount">0 apuestas</b><small id="dockCost">0,00 €</small></div><button id="generateButton" class="primary" onclick="generateCurrent()" disabled>Generar quiniela</button></div>
     <div id="betSummaryBar" class="bet-summary-bar" aria-label="Resumen de apuestas y coste">
       <div class="bet-summary-item"><span>Sin reducción</span><b><strong id="summaryFullBets">0</strong> · <em id="summaryFullCost">0,00 €</em></b></div>
       <div class="bet-summary-item"><span>Con condiciones</span><b><strong id="summaryConditionBets">0</strong> · <em id="summaryConditionCost">0,00 €</em></b></div>

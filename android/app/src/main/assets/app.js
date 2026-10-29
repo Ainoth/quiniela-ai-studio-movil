@@ -327,11 +327,7 @@ function summaryBase(round=current()){
   return sameAsReduced&&Array.isArray(round.unreducedBase)?round.unreducedBase:round.base;
 }
 function renderActions() {
-  const active = byId("page-quiniela").classList.contains("active");
-  byId("actionDock").classList.toggle("visible", active);
   let size = estimatedTickets();
-  byId("dockCount").textContent = "Base · "+size.toLocaleString("es-ES") + (size === 1 ? " apuesta" : " apuestas");
-  byId("dockCost").textContent = money(size * state.settings.priceCents);
   byId("generateButton").disabled = busy || !isEditable() || size < 1 || size > E.MAX_GENERATED;
   if (!isEditable() && state.data) byId("generateButton").textContent = "Jornada de consulta";
   else byId("generateButton").textContent = "Generar quiniela";

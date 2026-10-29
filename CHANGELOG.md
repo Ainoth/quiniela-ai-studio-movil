@@ -1,5 +1,10 @@
 # Cambios
 
+## 0.5.20 — generación al final de Quiniela
+
+- Quita el botón y el resumen duplicado de la barra flotante.
+- Mantiene la comparación fija de apuestas y deja Generar quiniela al final de la pestaña.
+
 ## 0.5.19 — modos Auto independientes
 
 - Cambiar una barra a Auto ya no modifica el modo Auto/Manual de la otra.
