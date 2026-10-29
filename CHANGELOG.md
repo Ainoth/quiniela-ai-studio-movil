@@ -1,5 +1,10 @@
 # Cambios
 
+## 0.5.15 — selector visual para dobles y triples
+
+- Sustituye las casillas numéricas por barras deslizantes que muestran la cantidad elegida.
+- Los controles se habilitan en modo manual y limitan la suma a los 14 partidos.
+
 ## 0.5.14 — filas de partidos más claras
 
 - Porcentajes sin corchetes, con tipografía ligeramente mayor.

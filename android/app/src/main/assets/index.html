@@ -55,7 +55,10 @@
           <select id="generationMode" onchange="setGenerationMode(this.value)"><option value="automatic">Automática · según temporadas</option><option value="manual">Manual · indicar cantidades</option></select>
           <details class="history-controls"><summary id="historySummary">Temporadas históricas</summary><div class="history-buttons"><button class="outline" onclick="selectAllHistory(true)">Todas</button><button class="outline" onclick="selectAllHistory(false)">Ninguna</button></div><div id="historySeasons" class="history-seasons"></div><label class="field-label" for="historicalTarget">Cobertura de la muestra histórica <output id="historicalTargetValue">70%</output></label><input id="historicalTarget" type="range" min="10" max="100" step="5" value="70" oninput="setHistoricalTarget(this.value)"><p id="historyDescription" class="help-text">La cobertura describe la muestra elegida; no pronostica los resultados futuros.</p></details>
           <p id="generationModeHint" class="help-text">En automático, el programa calcula los dobles y triples.</p>
-          <div class="count-grid generator-counts"><span>Tipo</span><span>Cantidad</span><span></span><b>Dobles</b><input id="doubleCount" type="number" min="0" max="14" value="1" onchange="setGenerationCounts()"><span></span><b>Triples</b><input id="tripleCount" type="number" min="0" max="14" value="1" onchange="setGenerationCounts()"><span></span></div>
+          <div class="generator-counts">
+            <label class="count-slider"><span><b>Dobles</b><output id="doubleCountValue">1</output></span><input id="doubleCount" type="range" min="0" max="14" value="1" oninput="setGenerationCounts()" aria-label="Cantidad de dobles"></label>
+            <label class="count-slider"><span><b>Triples</b><output id="tripleCountValue">1</output></span><input id="tripleCount" type="range" min="0" max="14" value="1" oninput="setGenerationCounts()" aria-label="Cantidad de triples"></label>
+          </div>
           <button id="fillBaseButton" class="secondary full" onclick="fillBase()" disabled>Crear base</button>
           <p class="help-text">La modalidad automática busca la menor base que alcance la cobertura elegida en las temporadas seleccionadas. El cálculo usa los porcentajes activos para ordenar los signos y el histórico para elegir dobles/triples.</p>
         </section>

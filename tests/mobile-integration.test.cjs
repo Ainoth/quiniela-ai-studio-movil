@@ -33,6 +33,10 @@ test("la generación automática muestra sus temporadas y bloquea dobles/triples
   assert.match(html, /Automática · según temporadas/);
   assert.match(html, /id="historySeasons"/);
   assert.match(html, /id="doubleCount"/);
+  assert.match(html, /id="doubleCount" type="range"/);
+  assert.match(html, /id="tripleCount" type="range"/);
+  assert.match(html, /id="doubleCountValue"/);
+  assert.match(app, /doubleCount"\)\.max=14-counts\.triples/);
   assert.match(html, /id="generationModeHint"/);
   assert.match(app, /doubleCount"\)\.disabled = generation\.mode !== "manual"/);
 });
