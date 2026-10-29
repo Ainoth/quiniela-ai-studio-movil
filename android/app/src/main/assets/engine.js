@@ -79,6 +79,10 @@
     });
   }
 
+  function percentageLabel(value) {
+    return Number.isFinite(value) ? Math.round(value * 100) + "%" : "";
+  }
+
   function automaticPleno(plenoValues) {
     if(!Array.isArray(plenoValues)||plenoValues.length!==2)throw Error("Faltan probabilidades del Pleno al 15.");
     return plenoValues.map((row,side)=>{
@@ -550,7 +554,7 @@
 
   root.EscrutinioEngine = { roundLine, parseKickoff, formatKickoff, parseDates, parseHours, parseNames,
     normalizeTeam, sameTeamName,
-    normalizeBase, validateProbabilities, automaticPleno, parseProbabilitySource, coverageBase, configuredBase, automaticBase, historicalBase, applySurprise, weightedProbabilities, differentiateProbabilities, surpriseOrder, surpriseEligiblePositions, reducedTemplate, reduceByTable, coverageCounts, baseSize, satisfiesFilters,
+    normalizeBase, validateProbabilities, percentageLabel, automaticPleno, parseProbabilitySource, coverageBase, configuredBase, automaticBase, historicalBase, applySurprise, weightedProbabilities, differentiateProbabilities, surpriseOrder, surpriseEligiblePositions, reducedTemplate, reduceByTable, coverageCounts, baseSize, satisfiesFilters,
     generateBets, countGeneratedBets, probabilityMass, historicalConditionFilters, conditionRiskCoverage, MAX_GENERATED,
     availableRounds, currentRound, scrutiny, live, evaluate, categoryPossibilities, awardBreakdown };
   if (typeof module !== "undefined") module.exports = root.EscrutinioEngine;

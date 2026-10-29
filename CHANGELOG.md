@@ -1,5 +1,13 @@
 # Cambios
 
+## 0.5.12 — porcentajes de partidos corregidos
+
+- Retira los controles de candado y limpia bloqueos guardados anteriormente.
+- Convierte las probabilidades normalizadas a porcentajes visibles correctamente (por ejemplo, 0,52 → 52%).
+- Muestra 1/X/2 en una fila propia y deja el riesgo de desvío en una línea separada.
+- Verificado con 32 pruebas y compilación Android.
+
+
 ## 0.5.11 — separación de los resúmenes
 
 - Añade una línea vertical de contraste entre el bloque sin reducción y el bloque con condiciones.

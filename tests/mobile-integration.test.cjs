@@ -91,3 +91,11 @@ test("la comparación de apuestas permanece fija sobre la navegación y refleja 
   assert.match(style, /\.bet-summary-item b\{justify-content:space-between;font-size:12px\}/);
   assert.match(style, /\.bet-summary-item\+\.bet-summary-item\{border-left:2px solid #49cfff/);
 });
+
+test("los partidos no muestran candados y separan las probabilidades de la estimación de desvío", () => {
+  assert.doesNotMatch(app, /class="lock-button|function toggleLock/);
+  assert.match(app, /round\.locks\.some\(Boolean\).*Array\(14\)\.fill\(false\)/);
+  assert.match(app, /fixture-percentages/);
+  assert.match(app, /Desvío del favorito/);
+  assert.match(style, /\.fixture-percentages\{display:grid;grid-template-columns:repeat\(3/);
+});

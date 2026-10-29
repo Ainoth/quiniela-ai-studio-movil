@@ -44,3 +44,7 @@ body{padding-bottom:calc(198px + env(safe-area-inset-bottom))}.bet-summary-bar{p
 @media(min-width:600px){.bet-summary-bar{left:50%;right:auto;width:min(720px,100%);transform:translateX(-50%);border-inline:1px solid #2d6b9e}}
 .bet-summary-bar{gap:10px;padding:6px 9px}.bet-summary-item{grid-template-columns:1fr;gap:2px}.bet-summary-item span{font-size:10px}.bet-summary-item b{justify-content:space-between;font-size:12px}.bet-summary-item em{font-size:12px}
 .bet-summary-item+.bet-summary-item{border-left:2px solid #49cfff;padding-left:12px}
+/* Fixture rows show normalized 1/X/2 percentages clearly; lock controls are removed. */
+.fixture-row{grid-template-columns:minmax(0,1fr) 108px;min-height:58px}.fixture-controls,.lock-button{display:none}.fixture-meta{gap:4px}.fixture-teams{font-size:11px}.fixture-percentages{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;color:#d5edff;font-size:10px;font-variant-numeric:tabular-nums}.fixture-percentages span{white-space:nowrap}.fixture-percentages b{color:var(--cyan)}.fixture-risk{display:block;font-size:9px;font-weight:750}.fixture-risk.risk-high{color:#ffc45d}.fixture-risk.risk-mid{color:#8ce0a8}.fixture-risk.risk-low{color:#a9c6de}
+@media(min-width:600px){.fixture-row{grid-template-columns:minmax(0,1fr) 150px}}
+@media(max-width:365px){.fixture-row{grid-template-columns:minmax(0,1fr) 100px}}

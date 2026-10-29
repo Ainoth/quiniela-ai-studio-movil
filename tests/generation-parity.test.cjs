@@ -18,6 +18,12 @@ test("manual base chooses exactly requested double/triple widths within column b
   assert.throws(() => E.configuredBase(probabilities, 2, 1, 6), /supera/);
 });
 
+test("probability fractions are displayed as percentage values", () => {
+  assert.equal(E.percentageLabel(0.527),"53%");
+  assert.equal(E.percentageLabel(0),"0%");
+  assert.equal(E.percentageLabel(NaN),"");
+});
+
 test("automatic base is the exact maximum joint probability within the cap", () => {
   const chosen = E.automaticBase(probabilities, 6);
   assert.ok(chosen.columns <= 6);

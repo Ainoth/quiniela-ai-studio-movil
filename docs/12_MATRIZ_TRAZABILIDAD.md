@@ -36,3 +36,5 @@
 | RF-MOV-029 · mejorar legibilidad del resumen fijo | Implementado v0.5.10 | tipografía de etiquetas y cifras ampliada |
 
 | RF-MOV-030 · distinguir visualmente los dos bloques del resumen fijo | Implementado v0.5.11 | separador vertical contrastado entre cifras sin reducción y con condiciones |
+
+| RF-MOV-031 · quitar candados y corregir la lectura de porcentajes de los partidos | Implementado v0.5.12 | elimina controles de bloqueo; muestra 1/X/2 como porcentajes redondeados desde fracciones normalizadas y separa el riesgo estimado |

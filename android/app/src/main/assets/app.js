@@ -43,7 +43,7 @@ function current() {
   if(!Number.isFinite(Number(round.generation.historicalTarget)))round.generation.historicalTarget=0.7;
   if(!Array.isArray(round.historySeasons))round.historySeasons=HISTORY.seasons.slice();
   if(!round.auxiliaryWeights)round.auxiliaryWeights={classification:0,form5:0,history:0};
-  if(!Array.isArray(round.locks)||round.locks.length!==14)round.locks=Array(14).fill(false);
+  if(!Array.isArray(round.locks)||round.locks.length!==14||round.locks.some(Boolean))round.locks=Array(14).fill(false);
   if(!Number.isInteger(round.reductionTable))round.reductionTable=1;
   if(!Number.isInteger(round.differentiation))round.differentiation=0;
   if(!Number.isInteger(round.surpriseLevel))round.surpriseLevel=0;
@@ -213,7 +213,7 @@ function applyOfficialReduction(){
   try{const template=reductionTemplateFor(table),count=table.patterns.length*countPairs();if(count>E.MAX_GENERATED)throw Error("La reducida supera el límite de "+E.MAX_GENERATED.toLocaleString("es-ES")+" apuestas. Reduce las selecciones del Pleno.");const bets=E.reduceByTable(template.base,round.goals,table,template.positions);round.unreducedBets=round.bets?.length?round.bets.slice():null;round.unreducedBase=round.base.slice();round.base=template.base;round.bets=bets;round.generatedAt="Tabla Reducida "+table.number;round.appliedReduction={number:table.number,minimumHits:table.minimumHits,base:template.base.slice()};save();renderAll();setStatus("Reducida "+table.number+": "+bets.length.toLocaleString("es-ES")+" apuestas · "+money(bets.length*state.settings.priceCents)+". Cobertura condicional mínima "+table.minimumHits+"/14 sobre la base; no garantiza Pleno ni premio.","success");}
   catch(error){setStatus(error.message,"error");}
 }
-function formatPct(value) { return Number.isFinite(value) ? Math.round(value) + "%" : ""; }
+function formatPct(value) { return E.percentageLabel(value); }
 function renderCoverageLevels() {
   const round = current();
   if (!round.generation) round.generation = { mode: "automatic", doubles: 1, triples: 1, historicalTarget: 0.7 };
@@ -288,11 +288,11 @@ function renderFixtures() {
     const row = probabilities?.[index],riskRow=riskRows?.[index];
     const risk=riskRow?Math.round((1-Math.max(...riskRow))*100):null;
     const level=risk===null?"":risk>=55?"fácil":risk>=40?"medio":"difícil",riskClass=risk===null?"":" risk-"+(risk>=55?"high":risk>=40?"mid":"low");
-    const odds = row ? "1 " + formatPct(row[0]) + " · X " + formatPct(row[1]) + " · 2 " + formatPct(row[2]) : match.kick;
-    const insight=risk===null?odds:"Desvío estimado "+risk+"% · "+level+(odds?" · "+odds:"");
-    return '<div class="fixture-row"><div class="fixture-meta"><strong class="fixture-teams">' + String(index + 1).padStart(2, "0") + " · " + escapeHtml(match.home) + " – " + escapeHtml(match.away) + '</strong><small class="fixture-extra'+riskClass+'">' + escapeHtml(insight || "Horario pendiente") + '</small></div><div class="fixture-controls"><button class="lock-button '+(round.locks[index]?"locked":"")+'" onclick="toggleLock('+index+')" aria-label="'+(round.locks[index]?"Desbloquear":"Bloquear")+' partido '+(index+1)+'" '+(!isEditable()?"disabled":"")+'>'+(round.locks[index]?"🔒":"🔓")+'</button><div class="sign-buttons">' + ["1", "X", "2"].map((sign) =>
+    const percentages=row?'<div class="fixture-percentages">'+["1","X","2"].map((sign,i)=>'<span><b>'+sign+'</b> '+formatPct(row[i])+'</span>').join("")+'</div>':'<small class="fixture-extra">Porcentajes no disponibles</small>';
+    const riskNote=risk===null?"":'<small class="fixture-risk'+riskClass+'">Desvío del favorito: '+risk+'% · '+level+'</small>';
+    return '<div class="fixture-row"><div class="fixture-meta"><strong class="fixture-teams">' + String(index + 1).padStart(2, "0") + " · " + escapeHtml(match.home) + " – " + escapeHtml(match.away) + '</strong>'+percentages+riskNote+'</div><div class="sign-buttons">' + ["1", "X", "2"].map((sign) =>
       '<button class="' + (round.base[index].includes(sign) ? "selected" : "") + '" onclick="toggleSign(' + index + ',\'' + sign + '\')" aria-label="Partido ' + (index + 1) + " signo " + sign + '" ' + (!isEditable() ? "disabled" : "") + ">" + sign + "</button>",
-    ).join("") + "</div></div></div>";
+    ).join("") + "</div></div>";
   }).join("");
   let size = 0;
   try { size = baseSize(); } catch (_error) { size = 0; }
@@ -635,7 +635,6 @@ function toggleSign(index, sign) {
   current().bets = [];
   save(); renderAll();
 }
-function toggleLock(index){if(!isEditable())return setStatus("Solo se bloquea la base de la jornada en curso.","error");current().locks[index]=!current().locks[index];save();renderAll();}
 function toggleGoal(side, goal) {
   if (!isEditable()) return setStatus("Solo se edita el Pleno de la jornada en curso.", "error");
   current().plenoMode="manual";
