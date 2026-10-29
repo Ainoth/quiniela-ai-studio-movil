@@ -278,19 +278,15 @@ function renderFixtures() {
   const matches = fixture();
   const round = current();
   const probabilities = selectedProbabilities();
-  const riskRows = surpriseProbabilityRows();
   if (matches.length < 14) {
     byId("fixtures").innerHTML = '<div class="empty">Descarga una jornada válida para editar los 14 partidos.</div>';
     byId("baseCount").textContent = "0 apuestas base";
     return;
   }
   byId("fixtures").innerHTML = matches.slice(0, 14).map((match, index) => {
-    const row = probabilities?.[index],riskRow=riskRows?.[index];
-    const risk=riskRow?Math.round((1-Math.max(...riskRow))*100):null;
-    const level=risk===null?"":risk>=55?"fácil":risk>=40?"medio":"difícil",riskClass=risk===null?"":" risk-"+(risk>=55?"high":risk>=40?"mid":"low");
-    const percentages=row?'<div class="fixture-percentages">'+["1","X","2"].map((sign,i)=>'<span><b>'+sign+'</b> '+formatPct(row[i])+'</span>').join("")+'</div>':'<small class="fixture-extra">Porcentajes no disponibles</small>';
-    const riskNote=risk===null?"":'<small class="fixture-risk'+riskClass+'">Desvío del favorito: '+risk+'% · '+level+'</small>';
-    return '<div class="fixture-row"><div class="fixture-meta"><strong class="fixture-teams">' + String(index + 1).padStart(2, "0") + " · " + escapeHtml(match.home) + " – " + escapeHtml(match.away) + '</strong>'+percentages+riskNote+'</div><div class="sign-buttons">' + ["1", "X", "2"].map((sign) =>
+    const row = probabilities?.[index];
+    const percentages='<div class="fixture-percentages">'+[0,1,2].map(i=>'<span class="fixture-pct">['+(row?formatPct(row[i]):"—")+']</span>').join("")+'</div>';
+    return '<div class="fixture-row"><span class="fixture-number">' + String(index + 1).padStart(2, "0") + '</span><span class="fixture-teams">' + escapeHtml(match.home) + " – " + escapeHtml(match.away) + '</span>'+percentages+'<div class="sign-buttons">' + ["1", "X", "2"].map((sign) =>
       '<button class="' + (round.base[index].includes(sign) ? "selected" : "") + '" onclick="toggleSign(' + index + ',\'' + sign + '\')" aria-label="Partido ' + (index + 1) + " signo " + sign + '" ' + (!isEditable() ? "disabled" : "") + ">" + sign + "</button>",
     ).join("") + "</div></div>";
   }).join("");

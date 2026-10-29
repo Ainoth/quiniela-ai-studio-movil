@@ -1,5 +1,12 @@
 # Cambios
 
+## 0.5.13 — filas compactas en la quiniela base
+
+- Presenta cada partido en una línea: número, local, visitante, porcentajes 1/X/2 entre corchetes y sus botones.
+- Ajusta la altura de las filas a la de los botones de signo y elimina la línea adicional de desvío.
+- Verificado con 32 pruebas y compilación Android.
+
+
 ## 0.5.12 — porcentajes de partidos corregidos
 
 - Retira los controles de candado y limpia bloqueos guardados anteriormente.

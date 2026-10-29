@@ -92,10 +92,12 @@ test("la comparación de apuestas permanece fija sobre la navegación y refleja 
   assert.match(style, /\.bet-summary-item\+\.bet-summary-item\{border-left:2px solid #49cfff/);
 });
 
-test("los partidos no muestran candados y separan las probabilidades de la estimación de desvío", () => {
+test("cada partido muestra número, equipos, porcentajes y signos en una sola fila compacta", () => {
   assert.doesNotMatch(app, /class="lock-button|function toggleLock/);
   assert.match(app, /round\.locks\.some\(Boolean\).*Array\(14\)\.fill\(false\)/);
   assert.match(app, /fixture-percentages/);
-  assert.match(app, /Desvío del favorito/);
-  assert.match(style, /\.fixture-percentages\{display:grid;grid-template-columns:repeat\(3/);
+  assert.match(app, /class="fixture-pct"/);
+  assert.doesNotMatch(app, /Desvío del favorito/);
+  assert.match(app, /return '<div class="fixture-row"><span class="fixture-number"[\s\S]*?class="fixture-teams"[\s\S]*?\+percentages\+'<div class="sign-buttons"/);
+  assert.match(style, /\.fixture-row\{grid-template-columns:18px minmax\(70px,1fr\) 90px 96px;gap:4px;min-height:38px/);
 });
